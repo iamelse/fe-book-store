@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
+import { useCart } from "../context/CartContext";
 import { getCart, removeFromCart, updateCartItemQuantity } from "../api/cart";
-import { useAuth } from "../context/AuthProvider";
-import Navbar from "../components/Navbar";
+import { useAuth } from "../context/AuthContext";
 import FullscreenLoader from "../components/FullscreenLoader";
 import { createOrderFromCart } from "../api/order";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +10,7 @@ import Footer from "../components/Footer";
 
 export default function Cart() {
   const { auth } = useAuth();
+  const { cartCount } = useCart();
   const navigate = useNavigate();
 
   const [cart, setCart] = useState(null);
@@ -17,9 +18,9 @@ export default function Cart() {
   const [removingId, setRemovingId] = useState(null);
   const [checkingOut, setCheckingOut] = useState(false);
 
-  // Track debounce timers per item
   const debounceTimers = useRef({});
 
+  // Fetch cart
   useEffect(() => {
     if (!auth.token) {
       setCart(null);
@@ -40,6 +41,7 @@ export default function Cart() {
     }
   };
 
+  // Quantity handlers
   const triggerUpdateQty = async (id, qty) => {
     try {
       await updateCartItemQuantity(id, { quantity: qty });
@@ -52,10 +54,8 @@ export default function Cart() {
 
   const onChangeQuantity = (ci, qty) => {
     qty = Number(qty);
-
     if (qty < 1 || qty > ci.item.stock) return;
 
-    // Update UI only — local state update
     setCart((prev) => ({
       ...prev,
       cart_items: prev.cart_items.map((item) =>
@@ -63,7 +63,6 @@ export default function Cart() {
       ),
     }));
 
-    // Debounce API update
     clearTimeout(debounceTimers.current[ci.id]);
     debounceTimers.current[ci.id] = setTimeout(() => {
       triggerUpdateQty(ci.id, qty);
@@ -71,10 +70,10 @@ export default function Cart() {
   };
 
   const onBlurQuantity = (ci) => {
-    const qty = ci.quantity;
-    triggerUpdateQty(ci.id, qty);
+    triggerUpdateQty(ci.id, ci.quantity);
   };
 
+  // Remove item
   const handleRemove = async (id) => {
     setRemovingId(id);
     try {
@@ -88,6 +87,7 @@ export default function Cart() {
     }
   };
 
+  // Checkout
   const handleCheckout = async () => {
     setCheckingOut(true);
     try {
@@ -102,15 +102,15 @@ export default function Cart() {
 
   if (loading) return <FullscreenLoader />;
 
-  if (!cart || cart.cart_items.length === 0) return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <div className="p-6 text-center">
+  // Cart empty
+  if (!cart || cart.cart_items.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
         <h2 className="text-2xl font-semibold mb-4">Your cart is empty</h2>
         <p className="text-gray-600">Add items to your cart to see them here.</p>
       </div>
-    </div>
-  );
+    );
+  }
 
   const totalPrice = cart.cart_items.reduce(
     (sum, item) => sum + item.quantity * item.item.price,
@@ -122,20 +122,16 @@ export default function Cart() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
       <div className="p-6 max-w-7xl mx-auto">
         <h1 className="text-3xl font-semibold mb-2">Shopping Cart</h1>
         <p className="text-gray-600 mb-6">
           Review items before checking out. Adjust quantities or remove items anytime.
         </p>
 
-        {/* CART ITEMS */}
+        {/* Cart items */}
         <div className="bg-white rounded shadow divide-y">
           {cart.cart_items.map((ci) => (
             <div key={ci.id} className="flex items-center justify-between p-4">
-              
-              {/* Info */}
               <div className="flex items-center gap-4 flex-1">
                 <img
                   src="https://picsum.photos/80/80"
@@ -144,24 +140,17 @@ export default function Cart() {
                 />
                 <div>
                   <p className="font-medium">{ci.item.title}</p>
-
                   <p className={`text-sm mt-1 ${ci.item.stock > 0 ? "text-green-600" : "text-red-600"}`}>
                     {ci.item.stock > 0 ? "In stock" : "Out of stock"}
                   </p>
-
-                  {/* Total Stock */}
                   {ci.item.stock > 0 && (
-                    <p className="text-xs text-gray-500">
-                      {ci.item.stock} items available
-                    </p>
+                    <p className="text-xs text-gray-500">{ci.item.stock} items available</p>
                   )}
                 </div>
               </div>
 
-              {/* Quantity */}
-              <div className="flex flex-col items-center gap-2 mx-4 qty-input-wrapper">
+              <div className="flex flex-col items-center gap-2 mx-4">
                 <div className="flex items-center gap-2">
-                  
                   <button
                     className="px-3 py-1 border rounded"
                     disabled={ci.quantity <= 1}
@@ -169,7 +158,6 @@ export default function Cart() {
                   >
                     -
                   </button>
-
                   <input
                     type="number"
                     min="1"
@@ -179,7 +167,6 @@ export default function Cart() {
                     onBlur={() => onBlurQuantity(ci)}
                     className="w-14 text-center border rounded py-1"
                   />
-
                   <button
                     className="px-3 py-1 border rounded"
                     disabled={ci.quantity >= ci.item.stock}
@@ -187,7 +174,6 @@ export default function Cart() {
                   >
                     +
                   </button>
-
                 </div>
 
                 <button
@@ -199,7 +185,6 @@ export default function Cart() {
                 </button>
               </div>
 
-              {/* Price */}
               <div className="text-right w-24">
                 <p className="font-medium">{formatPrice(ci.item.price)}</p>
               </div>
@@ -207,7 +192,7 @@ export default function Cart() {
           ))}
         </div>
 
-        {/* SUMMARY */}
+        {/* Summary */}
         <div className="mt-6 bg-white p-4 rounded shadow space-y-2">
           <div className="flex justify-between">
             <span>Subtotal</span>
@@ -227,7 +212,6 @@ export default function Cart() {
           </div>
         </div>
 
-        {/* ACTION */}
         <button
           onClick={handleCheckout}
           disabled={checkingOut}
@@ -244,7 +228,6 @@ export default function Cart() {
             or Continue Shopping →
           </button>
         </div>
-
       </div>
 
       <Footer />

@@ -3,9 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getItem } from "../api/items";
 import { addToCart } from "../api/cart";
 import FullscreenLoader from "../components/FullscreenLoader";
-import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../context/AuthContext";
 import { formatPrice } from "../utils/format";
 import { Star, Minus, Plus } from "lucide-react";
 import Cookies from "js-cookie";
@@ -116,8 +115,6 @@ export default function ItemDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
       <section className="max-w-7xl mx-auto px-6 py-12 md:py-16 flex flex-col md:flex-row gap-10">
         
         {/* LEFT: IMAGES */}

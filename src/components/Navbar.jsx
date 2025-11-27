@@ -1,16 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
+import {
+  Home,
+  Menu,
+  User,
+  LogIn,
+  Search,
+  ShoppingCart,
+} from "lucide-react";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { auth, logout, loading } = useAuth();
+  const { cartCount, fetchCartCount } = useCart();
 
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const cartCount = 0;
+  const [mobileSearch, setMobileSearch] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
 
-  // Hardcode 3 kategori terbaru
   const categories = [
     { name: "Fantasy", slug: "fantasy" },
     { name: "Fiction", slug: "fiction" },
@@ -18,7 +28,7 @@ export default function Navbar() {
   ];
 
   const navLinks = [
-    { label: "Shop", path: "/items" }, // tetap ada
+    { label: "Shop", path: "/items" },
     ...categories.map((cat) => ({
       label: cat.name,
       path: `/items?category=${cat.slug}`,
@@ -27,28 +37,38 @@ export default function Navbar() {
 
   const isActive = (path) => location.pathname + location.search === path;
 
+  useEffect(() => {
+    const handler = () => fetchCartCount();
+    window.addEventListener("cartUpdated", handler);
+    return () => window.removeEventListener("cartUpdated", handler);
+  }, []);
+
+  // Close dropdown jika klik di luar
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleMobileSearch = (e) => {
+    e.preventDefault();
+    if (mobileSearch.trim() === "") return;
+    navigate(`/items?search=${encodeURIComponent(mobileSearch.trim())}`);
+    setMobileSearch("");
+  };
+
   return (
     <header className="relative bg-white border-b border-gray-200">
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="rounded-md p-2 text-gray-400 lg:hidden"
-          >
-            <span className="sr-only">Open menu</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="1.5" className="size-6">
-              <path strokeLinecap="round" strokeLinejoin="round"
-                d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
-          </button>
-
-          {/* Logo */}
+          {/* Desktop logo */}
           <div
             onClick={() => navigate("/")}
-            className="ml-4 flex lg:ml-0 cursor-pointer"
+            className="ml-4 hidden lg:flex lg:ml-0 cursor-pointer"
           >
             <img
               src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=blue&shade=600"
@@ -58,7 +78,7 @@ export default function Navbar() {
           </div>
 
           {/* Desktop nav links */}
-          <div className="ms-8 hidden lg:flex lg:space-x-8">
+          <div className="ml-8 hidden lg:flex lg:space-x-8">
             {navLinks.map((item) => (
               <button
                 key={item.path}
@@ -74,148 +94,145 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Right side */}
-          <div className="ml-auto flex items-center">
+          {/* Desktop right side */}
+          <div className="hidden lg:flex ml-auto items-center relative">
             {loading ? (
-              <div className="hidden lg:flex w-24 h-5 bg-gray-200 rounded animate-pulse" />
+              <div className="w-24 h-5 bg-gray-200 rounded animate-pulse" />
             ) : auth.user ? (
-              <div className="hidden lg:flex lg:items-center lg:space-x-4">
-                <span className="text-sm font-medium text-gray-700">
-                  Hi, {auth.user.name}
-                </span>
+              <div className="relative" ref={dropdownRef}>
                 <button
-                  onClick={logout}
-                  className="text-sm font-medium text-gray-700 hover:text-[#3e6dc8]"
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="text-sm font-medium text-gray-700 mr-4 hover:text-[#3e6dc8] flex items-center"
                 >
-                  Logout
+                  Hi, {auth.user.name}
                 </button>
+
+                {showDropdown && (
+                  <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 shadow-sm rounded-md z-50 animate-fade-in">
+                    <button
+                      onClick={() => { navigate("/profile"); setShowDropdown(false); }}
+                      className="w-full flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition"
+                    >
+                      <User className="w-4 h-4 mr-2" />
+                      Profile
+                    </button>
+                    <button
+                      onClick={() => { logout(); setShowDropdown(false); }}
+                      className="w-full flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition"
+                    >
+                      <LogIn className="w-4 h-4 mr-2 rotate-180" />
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="hidden lg:flex lg:items-center lg:space-x-6">
+              <>
                 <button
                   onClick={() => navigate("/login")}
-                  className="text-sm font-medium text-gray-700 hover:text-[#3e6dc8]"
+                  className="text-sm font-medium text-gray-700 hover:text-[#3e6dc8] mr-4 flex items-center"
                 >
+                  <LogIn className="w-5 h-5 mr-1" />
                   Sign in
                 </button>
-                <span className="h-6 w-px bg-gray-200"></span>
                 <button
                   onClick={() => navigate("/register")}
-                  className="text-sm font-medium text-gray-700 hover:text-[#3e6dc8]"
+                  className="text-sm font-medium text-gray-700 hover:text-[#3e6dc8] mr-4"
                 >
                   Create account
                 </button>
-              </div>
+              </>
             )}
 
             {/* Cart icon */}
             <button
-              onClick={() => {
-                if (auth.user) {
-                  navigate("/cart");
-                } else {
-                  navigate("/login");
-                }
-              }}
-              className="group -m-2 flex items-center p-2 ml-4"
+              onClick={() => navigate(auth.user ? "/cart" : "/login")}
+              className="relative -m-2 flex items-center p-2"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="1.5" className="size-6 text-gray-400 group-hover:text-[#3e6dc8]">
-                <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993
-                    1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125
-                    0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513
-                    7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625
-                    10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1
-                    .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
-                />
-              </svg>
-              <span className="ml-2 text-sm font-medium text-gray-700 group-hover:text-[#3e6dc8]">
-                {cartCount}
-              </span>
+              <ShoppingCart className="w-6 h-6 text-gray-700 hover:text-[#3e6dc8]" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                  {cartCount}
+                </span>
+              )}
             </button>
+          </div>
 
+          {/* Mobile: search form + cart */}
+          <div className="lg:hidden flex items-center space-x-2 px-2">
+            <form
+              onSubmit={handleMobileSearch}
+              className="flex flex-1 items-center bg-gray-100 rounded-md px-3 py-2"
+            >
+              <input
+                type="text"
+                placeholder="Search..."
+                value={mobileSearch}
+                onChange={(e) => setMobileSearch(e.target.value)}
+                className="flex-1 bg-transparent focus:outline-none text-sm"
+              />
+              <button type="submit" className="ml-2 text-gray-500 hover:text-[#3e6dc8]">
+                <Search className="w-5 h-5" />
+              </button>
+            </form>
+
+            <button
+              onClick={() => navigate(auth.user ? "/cart" : "/login")}
+              className="relative flex-shrink-0 p-2"
+            >
+              <ShoppingCart className="w-6 h-6 text-gray-700 hover:text-[#3e6dc8]" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                  {cartCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
       </nav>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 bg-black/25 lg:hidden">
-          <div className="fixed inset-y-0 left-0 max-w-xs w-full bg-white shadow-xl p-6 flex flex-col">
+      {/* Mobile bottom nav */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md z-50">
+        <div className="flex justify-around items-center h-16">
+          <button
+            onClick={() => navigate("/")}
+            className={`flex flex-col items-center justify-center ${
+              isActive("/") ? "text-[#3e6dc8]" : "text-gray-700 hover:text-[#3e6dc8]"
+            }`}
+          >
+            <Home className="w-6 h-6 mb-1" />
+            <span className="text-xs">Home</span>
+          </button>
 
-            <div className="flex justify-end mb-4">
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="p-2 text-gray-400 hover:text-[#3e6dc8]"
-              >
-                ✕
-              </button>
-            </div>
+          <button
+            onClick={() => navigate("/items")}
+            className={`flex flex-col items-center justify-center ${
+              location.pathname.startsWith("/items") ? "text-[#3e6dc8]" : "text-gray-700 hover:text-[#3e6dc8]"
+            }`}
+          >
+            <Menu className="w-6 h-6 mb-1" />
+            <span className="text-xs">Categories</span>
+          </button>
 
-            <nav className="flex-1 space-y-4 overflow-y-auto">
-              {navLinks.map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setMobileOpen(false);
-                  }}
-                  className={`block text-base font-medium transition ${
-                    isActive(item.path)
-                      ? "text-[#3e6dc8]"
-                      : "text-gray-700 hover:text-[#3e6dc8]"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </nav>
-
-            <div className="mt-6 border-t border-gray-200 pt-6 space-y-4">
-              {loading ? (
-                <div className="w-full h-6 bg-gray-200 rounded animate-pulse" />
-              ) : auth.user ? (
-                <>
-                  <span className="block text-gray-900 text-base font-medium">
-                    Hi, {auth.user.name}
-                  </span>
-                  <button
-                    onClick={() => {
-                      logout();
-                      setMobileOpen(false);
-                    }}
-                    className="text-base font-medium text-gray-900 hover:text-[#3e6dc8]"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => {
-                      navigate("/login");
-                      setMobileOpen(false);
-                    }}
-                    className="block text-gray-900 text-base font-medium hover:text-[#3e6dc8]"
-                  >
-                    Sign in
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigate("/register");
-                      setMobileOpen(false);
-                    }}
-                    className="block text-gray-900 text-base font-medium hover:text-[#3e6dc8]"
-                  >
-                    Create account
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+          {auth.user ? (
+            <button
+              onClick={() => navigate("/profile")}
+              className="flex flex-col items-center justify-center text-gray-700 hover:text-[#3e6dc8]"
+            >
+              <User className="w-6 h-6 mb-1" />
+              <span className="text-xs">Profile</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate("/login")}
+              className="flex flex-col items-center justify-center text-gray-700 hover:text-[#3e6dc8]"
+            >
+              <LogIn className="w-6 h-6 mb-1" />
+              <span className="text-xs">Login</span>
+            </button>
+          )}
         </div>
-      )}
+      </div>
     </header>
   );
 }

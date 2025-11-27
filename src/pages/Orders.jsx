@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getOrders } from "../api/order";
-import { useAuth } from "../context/AuthProvider";
-import Navbar from "../components/Navbar";
+import { useAuth } from "../context/AuthContext";
 import FullscreenLoader from "../components/FullscreenLoader";
 
 export default function Orders() {
@@ -51,7 +50,6 @@ export default function Orders() {
   if (!orders || orders.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="p-6 text-center">
           <h2 className="text-2xl font-semibold mb-4">You have no orders yet</h2>
           <p className="text-gray-600">

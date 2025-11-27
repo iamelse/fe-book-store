@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ItemCard from "../components/ItemCard";
 import { getItems } from "../api/items";
@@ -114,8 +113,6 @@ export default function Items() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
       <section className="max-w-7xl mx-auto px-6 py-10">
         <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800">Koleksi Buku</h1>
         <p className="text-gray-600 mt-1 mb-6 max-w-2xl">

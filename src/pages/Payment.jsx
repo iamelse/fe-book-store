@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import Navbar from "../components/Navbar";
 import axios from "axios";
 import Cookies from "js-cookie";
 
@@ -59,7 +58,6 @@ export default function Payment() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
       <div className="p-6 max-w-md mx-auto bg-white shadow rounded mt-6">
         <h1 className="text-2xl font-semibold mb-4 text-center">Payment</h1>
 

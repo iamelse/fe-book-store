@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import axios from "axios";
-
 import {
   login as loginApi,
   register as registerApi,
@@ -22,9 +21,7 @@ export const AuthProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(true);
 
-  // -----------------------------------------------------
-  // 1) Pasang / hapus Authorization header berdasarkan token
-  // -----------------------------------------------------
+  // Pasang / hapus Authorization header axios
   useEffect(() => {
     if (auth.token) {
       axios.defaults.headers.common["Authorization"] = `Bearer ${auth.token}`;
@@ -33,9 +30,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [auth.token]);
 
-  // -----------------------------------------------------
-  // 2) Init: cek /me jika ada token di cookies
-  // -----------------------------------------------------
+  // Init: cek /me jika ada token di cookies
   useEffect(() => {
     async function initAuth() {
       if (!auth.token) {
@@ -47,7 +42,7 @@ export const AuthProvider = ({ children }) => {
         const user = await getMe();
         setAuth((prev) => ({ ...prev, user }));
       } catch (err) {
-        // jika token invalid → logout paksa
+        // token invalid → logout paksa
         Cookies.remove("token");
         Cookies.remove("role");
         Cookies.remove("user");
@@ -60,35 +55,29 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  // -----------------------------------------------------
-  // 3) Interceptor Refresh Token
-  // -----------------------------------------------------
+  // Interceptor axios untuk refresh token otomatis
   useEffect(() => {
     const interceptor = axios.interceptors.response.use(
       (res) => res,
       async (error) => {
         const originalRequest = error.config;
 
-        // jika token expired → refresh
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
 
           try {
             const newToken = await refreshToken();
-
             if (!newToken) throw new Error("Refresh failed");
 
-            // simpan token baru
             Cookies.set("token", newToken, { expires: 7 });
             setAuth((prev) => ({ ...prev, token: newToken }));
 
-            // pasang token untuk axios
             axios.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
             originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
 
             return axios(originalRequest);
 
-          } catch {
+          } catch (err) {
             Cookies.remove("token");
             Cookies.remove("role");
             Cookies.remove("user");
@@ -103,68 +92,65 @@ export const AuthProvider = ({ children }) => {
     return () => axios.interceptors.response.eject(interceptor);
   }, []);
 
-  // -----------------------------------------------------
-  // 4) LOGIN
-  // -----------------------------------------------------
+  // LOGIN
   const login = async (email, password) => {
-    const data = await loginApi(email, password);
+    try {
+      const data = await loginApi(email, password);
 
-    // simpan ke cookies
-    Cookies.set("token", data.token, { expires: 7 });
-    Cookies.set("role", data.role, { expires: 7 });
-    Cookies.set("user", JSON.stringify(data.user), { expires: 7 });
+      Cookies.set("token", data.token, { expires: 7 });
+      Cookies.set("role", data.role, { expires: 7 });
+      Cookies.set("user", JSON.stringify(data.user), { expires: 7 });
 
-    // set state
-    setAuth(data);
+      setAuth(data);
+      axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
 
-    // set axios header
-    axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
-
-    return data;
+      return data;
+    } catch (err) {
+      console.error("Login failed", err);
+      throw err;
+    }
   };
 
-  // -----------------------------------------------------
-  // 5) REGISTER
-  // -----------------------------------------------------
+  // REGISTER
   const register = async (name, email, password, password_confirmation) => {
-    return await registerApi(name, email, password, password_confirmation);
+    try {
+      return await registerApi(name, email, password, password_confirmation);
+    } catch (err) {
+      console.error("Register failed", err);
+      throw err;
+    }
   };
 
-  // -----------------------------------------------------
-  // 6) LOGOUT
-  // -----------------------------------------------------
+  // LOGOUT
   const logout = async () => {
     try {
       await logoutApi();
-    } catch {}
+    } catch (err) {
+      console.error("Logout API failed", err);
+    }
 
     Cookies.remove("token");
     Cookies.remove("role");
     Cookies.remove("user");
-
     setAuth({ token: null, role: null, user: null });
   };
 
-  // -----------------------------------------------------
-  // 7) Manual Refresh Token (opsional)
-  // -----------------------------------------------------
+  // Manual refresh token (opsional)
   const refresh = async () => {
-    const token = await refreshToken();
-
-    if (token) {
-      Cookies.set("token", token);
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      setAuth((prev) => ({ ...prev, token }));
+    try {
+      const token = await refreshToken();
+      if (token) {
+        Cookies.set("token", token);
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        setAuth((prev) => ({ ...prev, token }));
+      }
+    } catch (err) {
+      console.error("Manual refresh failed", err);
     }
   };
 
-  // -----------------------------------------------------
-  // RETURN PROVIDER
-  // -----------------------------------------------------
   return (
-    <AuthContext.Provider
-      value={{ auth, login, logout, register, refresh, loading }}
-    >
+    <AuthContext.Provider value={{ auth, login, logout, register, refresh, loading }}>
       {children}
     </AuthContext.Provider>
   );

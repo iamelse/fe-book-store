@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getItems } from "../api/items";
 import ItemCard from "../components/ItemCard";
-import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 export default function Home() {
@@ -43,8 +42,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
-
       {/* HERO SECTION */}
       <section className="border-b border-gray-200 min-h-[70vh] md:min-h-screen">
         <div className="max-w-7xl mx-auto px-6 py-12 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
