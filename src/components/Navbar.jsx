@@ -196,7 +196,7 @@ export default function Navbar() {
                   </div>
                   <div className="w-full h-px bg-gray-200 my-2"></div>
                   {cartItems.length === 0 ? (
-                    <p className="text-base text-gray-600 py-3">Keranjang kosong</p>
+                    <p className="text-sm text-gray-600 py-3">Keranjang kosong</p>
                   ) : (
                     <div className="max-h-[260px] overflow-y-auto pr-1">
                       {cartItems.map(cartItem => (
@@ -233,7 +233,7 @@ export default function Navbar() {
                   <h4 className="font-medium">Notifikasi</h4>
                   <div className="h-px bg-gray-200 my-2"></div>
                   {notifications.length === 0 ? (
-                    <p className="text-base text-gray-600">Tidak ada notifikasi</p>
+                    <p className="text-sm text-gray-600">Tidak ada notifikasi</p>
                   ) : (
                     notifications.map((notif, i) => (
                       <div key={i} className="py-2 text-base">{notif}</div>
@@ -276,11 +276,18 @@ export default function Navbar() {
                       </div>
                     </div>
                     <div className="border-t my-1"></div>
-                    <button onClick={() => navigate("/profile")} className="flex justify-between w-full px-4 py-2 hover:bg-gray-100 text-base">
+                    <button
+                      onClick={() => navigate("/profile")}
+                      className="flex justify-between items-center w-full px-4 py-2 hover:bg-gray-100 text-base"
+                    >
                       <span>Akun</span>
                       <ChevronRight size={16} className="text-gray-400" />
                     </button>
-                    <button onClick={() => navigate("/orders")} className="flex justify-between w-full px-4 py-2 hover:bg-gray-100 text-base">
+
+                    <button
+                      onClick={() => navigate("/orders")}
+                      className="flex justify-between items-center w-full px-4 py-2 hover:bg-gray-100 text-base"
+                    >
                       <span>Transaksi</span>
                       <ChevronRight size={16} className="text-gray-400" />
                     </button>
