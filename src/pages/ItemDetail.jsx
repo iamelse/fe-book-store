@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getItem } from "../api/items";
 import { addToCart } from "../api/cart";
 import FullscreenLoader from "../components/FullscreenLoader";
-import Footer from "../components/Footer";
+import NotFound from "./NotFound";
 import { useAuth } from "../context/AuthContext";
 import { formatPrice } from "../utils/format";
 import { Star, Minus, Plus } from "lucide-react";
@@ -19,20 +19,45 @@ export default function ItemDetail() {
 
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState(null);
   const [adding, setAdding] = useState(false);
   const [buying, setBuying] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [message, setMessage] = useState("");
   const [activeImage, setActiveImage] = useState(0);
 
+  // Fetch item
+  useEffect(() => {
+    const fetchItem = async () => {
+      setLoading(true);
+      setError(null);
+      setNotFound(false);
+      try {
+        const res = await getItem(slug);
+        if (res.data?.data) {
+          setItem(res.data.data);
+        } else {
+          setNotFound(true);
+        }
+      } catch (err) {
+        if (err.response?.status === 404) setNotFound(true);
+        else setError("Terjadi kesalahan saat memuat item.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchItem();
+  }, [slug]);
+
+  // Set page title & meta
   useEffect(() => {
     if (item?.title) {
       document.title = `${item.title} | Bookify`;
-
       const description = item.description
         ? `${item.description.slice(0, 150)}...`
         : `Dapatkan buku berkualitas berjudul ${item.title} hanya di Bookify.`;
-
       let metaDesc = document.querySelector("meta[name='description']");
       if (!metaDesc) {
         metaDesc = document.createElement("meta");
@@ -40,16 +65,12 @@ export default function ItemDetail() {
         document.head.appendChild(metaDesc);
       }
       metaDesc.content = description;
+    } else if (notFound) {
+      document.title = "404 Not Found | Bookify";
     } else {
       document.title = "Loading Item... | Bookify";
     }
-  }, [item]);
-
-  useEffect(() => {
-    getItem(slug)
-      .then((res) => setItem(res.data.data))
-      .finally(() => setLoading(false));
-  }, [slug]);
+  }, [item, notFound]);
 
   const handleAddToCart = async () => {
     if (!auth.token) return navigate("/login");
@@ -102,7 +123,9 @@ export default function ItemDetail() {
     }
   };
 
-  if (loading || !item) return <FullscreenLoader />;
+  if (loading) return <FullscreenLoader />;
+  if (notFound) return <NotFound />;
+  if (error) return <div className="p-6 text-red-500">{error}</div>;
 
   const images = item.images?.length
     ? item.images
@@ -115,194 +138,70 @@ export default function ItemDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* LEFT: IMAGES */}
       <section className="max-w-7xl mx-auto px-6 py-12 md:py-16 flex flex-col md:flex-row gap-10">
-        
-        {/* LEFT: IMAGES */}
         <div className="md:w-1/2 flex flex-col items-center">
-
-          {/* ACTIVE IMAGE */}
           <div className="w-full aspect-square rounded-lg overflow-hidden mb-4">
-            <img
-              src={images[activeImage]}
-              alt={item.title}
-              className="w-full h-full object-cover"
-            />
+            <img src={images[activeImage]} alt={item.title} className="w-full h-full object-cover" />
           </div>
 
-          {/* THUMBNAILS + ARROWS */}
+          {/* THUMBNAILS */}
           {images.length > 1 && (
-            <div className="relative w-full">
-
-              {/* LEFT ARROW */}
-              <button
-                onClick={() => {
-                  setActiveImage((prev) => {
-                    const newIndex = Math.max(prev - 1, 0);
-                    const scrollEl = document.getElementById("thumb-scroll");
-                    const thumbWidth = 90;
-                    scrollEl.scrollLeft = newIndex * thumbWidth;
-                    return newIndex;
-                  });
-                }}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10
-                  bg-white/80 backdrop-blur-sm shadow-md border border-gray-200
-                  hover:bg-[#3e6dc8] hover:text-white transition p-2 rounded-full"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"
-                  viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-                </svg>
-              </button>
-
-              {/* THUMBS */}
-              <div
-                id="thumb-scroll"
-                className="w-full flex space-x-2 overflow-x-auto scrollbar-hide"
-              >
-                {images.slice(0, 12).map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setActiveImage(idx);
-                      const scrollEl = document.getElementById("thumb-scroll");
-                      const thumbWidth = 90;
-                      scrollEl.scrollLeft = idx * thumbWidth;
-                    }}
-                    className={`flex-shrink-0 w-20 aspect-square rounded overflow-hidden border-2 transition-all duration-150 ${
-                      idx === activeImage
-                        ? "border-[#3e6dc8] ring-2 ring-[#3e6dc8]/40"
-                        : "border-gray-300 hover:border-[#3e6dc8]/60"
-                    }`}
-                  >
-                    <img
-                      src={img}
-                      alt={`thumb ${idx}`}
-                      loading="lazy"
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-
-              {/* RIGHT ARROW */}
-              <button
-                onClick={() => {
-                  setActiveImage((prev) => {
-                    const newIndex = Math.min(prev + 1, images.length - 1);
-                    const scrollEl = document.getElementById("thumb-scroll");
-                    const thumbWidth = 90;
-                    scrollEl.scrollLeft = newIndex * thumbWidth;
-                    return newIndex;
-                  });
-                }}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10
-                  bg-white/80 backdrop-blur-sm shadow-md border border-gray-200
-                  hover:bg-[#3e6dc8] hover:text-white transition p-2 rounded-full"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"
-                  viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-                </svg>
-              </button>
-
+            <div className="relative w-full flex space-x-2 overflow-x-auto scrollbar-hide">
+              {images.slice(0, 12).map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImage(idx)}
+                  className={`flex-shrink-0 w-20 aspect-square rounded overflow-hidden border-2 transition-all duration-150 ${
+                    idx === activeImage
+                      ? "border-[#3e6dc8] ring-2 ring-[#3e6dc8]/40"
+                      : "border-gray-300 hover:border-[#3e6dc8]/60"
+                  }`}
+                >
+                  <img src={img} alt={`thumb ${idx}`} loading="lazy" className="w-full h-full object-cover" />
+                </button>
+              ))}
             </div>
           )}
         </div>
 
         {/* RIGHT: INFO */}
         <div className="md:w-1/2 flex flex-col justify-start items-start space-y-4">
-          <p className="text-sm text-gray-500 uppercase">
-            {item.category?.name || "Fiction"}
-          </p>
+          <p className="text-sm text-gray-500 uppercase">{item.category?.name || "Fiction"}</p>
           <h1 className="text-3xl font-bold">{item.title}</h1>
           <p className="text-gray-700">{item.author || "Unknown Author"}</p>
-
-          {/* RATING */}
           <div className="flex items-center space-x-1">
             <Star size={16} className="text-yellow-400 fill-yellow-400" />
             <span className="text-sm font-medium">{rating}</span>
           </div>
 
-          {/* PRICE */}
           <div className="flex items-center space-x-3">
-            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-              20% OFF
-            </span>
-            <p className="text-xl text-gray-400 line-through">
-              {formatPrice(item.price)}
-            </p>
-            <p className="text-2xl font-bold text-[#3e6dc8]">
-              {formatPrice(Math.round(item.price * 0.8))}
-            </p>
+            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">20% OFF</span>
+            <p className="text-xl text-gray-400 line-through">{formatPrice(item.price)}</p>
+            <p className="text-2xl font-bold text-[#3e6dc8]">{formatPrice(Math.round(item.price * 0.8))}</p>
           </div>
 
-          {/* STOCK */}
-          <p
-            className={`inline-block w-auto px-3 py-3 rounded-md text-sm font-medium ${
-              stock > 0
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
-            }`}
-          >
+          <p className={`inline-block px-3 py-1 rounded-md text-sm font-medium ${
+            stock > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+          }`}>
             {stock > 0 ? `${stock} in stock` : "Out of stock"}
           </p>
 
-          {item.description && (
-            <p className="text-gray-700 mt-2">{item.description}</p>
-          )}
+          {item.description && <p className="text-gray-700 mt-2">{item.description}</p>}
 
-          {/* QUANTITY */}
+          {/* QUANTITY & ACTIONS */}
           <div className="flex flex-col gap-3 mt-4 w-full">
             <div className="flex items-center gap-3">
               <div className="qty-input-wrapper flex items-center border border-gray-300 rounded-lg overflow-hidden">
-                <button
-                  disabled={quantity <= 1}
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="px-1.5 py-2.5 disabled:opacity-40 hover:bg-gray-100"
-                >
-                  <Minus size={18} />
-                </button>
-
-                <input
-                  type="number"
-                  min="1"
-                  max={stock}
-                  value={quantity}
-                  onChange={(e) => {
-                    let value = Number(e.target.value);
-                    if (value < 1) value = 1;
-                    if (value > stock) value = stock;
-                    setQuantity(value);
-                  }}
-                  className="w-10 text-center font-medium text-gray-700 focus:outline-none"
-                />
-
-                <button
-                  disabled={quantity >= stock}
-                  onClick={() => setQuantity((q) => Math.min(stock, q + 1))}
-                  className="px-1.5 py-2.5 disabled:opacity-40 hover:bg-gray-100"
-                >
-                  <Plus size={18} />
-                </button>
+                <button disabled={quantity <= 1} onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="px-1.5 py-2.5 disabled:opacity-40 hover:bg-gray-100"><Minus size={18} /></button>
+                <input type="number" min="1" max={stock} value={quantity} onChange={(e) => setQuantity(Math.min(Math.max(1, Number(e.target.value)), stock))} className="w-10 text-center font-medium text-gray-700 focus:outline-none" />
+                <button disabled={quantity >= stock} onClick={() => setQuantity((q) => Math.min(stock, q + 1))} className="px-1.5 py-2.5 disabled:opacity-40 hover:bg-gray-100"><Plus size={18} /></button>
               </div>
             </div>
 
             <div className="flex gap-3 pt-4 w-full">
-              <button
-                onClick={handleAddToCart}
-                disabled={adding || stock === 0}
-                className="px-5 py-3 rounded-lg font-medium border text-[#3e6dc8] border-[#3e6dc8] bg-white hover:bg-[#e0e7ff] disabled:opacity-50"
-              >
-                {adding ? "Adding..." : "Add to Cart"}
-              </button>
-
-              <button
-                onClick={handleBuyNow}
-                disabled={buying || stock === 0}
-                className="px-5 py-3 rounded-lg text-white font-medium bg-[#3e6dc8] hover:bg-[#345ab0] disabled:opacity-50"
-              >
-                {buying ? "Processing..." : "Buy Now"}
-              </button>
+              <button onClick={handleAddToCart} disabled={adding || stock === 0} className="px-5 py-3 rounded-lg font-medium border text-[#3e6dc8] border-[#3e6dc8] bg-white hover:bg-[#e0e7ff] disabled:opacity-50">{adding ? "Adding..." : "Add to Cart"}</button>
+              <button onClick={handleBuyNow} disabled={buying || stock === 0} className="px-5 py-3 rounded-lg text-white font-medium bg-[#3e6dc8] hover:bg-[#345ab0] disabled:opacity-50">{buying ? "Processing..." : "Buy Now"}</button>
             </div>
           </div>
 
