@@ -27,12 +27,12 @@ export default function ItemCard({ item, onClick }) {
         <div className="relative w-full aspect-[1/1.4] bg-muted overflow-hidden">
           
           {/* Discount */}
-          <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md shadow">
+          <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] sm:text-sm font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md shadow">
             -{discount}%
           </div>
 
           {/* Rating */}
-          <div className="absolute top-2 right-2 bg-black/70 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md flex items-center gap-1">
+          <div className="absolute top-2 right-2 bg-black/70 text-white text-[10px] sm:text-sm px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md flex items-center gap-1">
             <Star size={12} className="text-yellow-400 fill-yellow-400" />
             {rating}
           </div>
@@ -55,7 +55,7 @@ export default function ItemCard({ item, onClick }) {
           </h3>
 
           {/* Author */}
-          <p className="text-xs sm:text-sm text-muted-foreground">
+          <p className="text-sm sm:text-sm text-gray-600">
             {item.author || "Unknown Author"}
           </p>
 

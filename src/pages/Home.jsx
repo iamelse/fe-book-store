@@ -69,13 +69,13 @@ export default function Home() {
 
         {/* Custom arrows */}
         <button
-          className="absolute left-2 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute left-0.5 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
           onClick={() => swiperRef.current.swiper.slidePrev()}
         >
           <ArrowLeft size={20} />
         </button>
         <button
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute right-0.5 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
           onClick={() => swiperRef.current.swiper.slideNext()}
         >
           <ArrowRight size={20} />

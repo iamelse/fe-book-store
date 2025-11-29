@@ -138,9 +138,9 @@ export default function Navbar() {
               {categoryOpen && (
                 <div className="absolute top-8 left-0 w-48 bg-white shadow-md border rounded-md py-2 z-50">
                   {loadingCats ? (
-                    <p className="px-4 py-2 text-sm text-gray-500">Loading...</p>
+                    <p className="px-4 py-2 text-base text-gray-500">Loading...</p>
                   ) : categories.length === 0 ? (
-                    <p className="px-4 py-2 text-sm text-gray-500">Tidak ada kategori</p>
+                    <p className="px-4 py-2 text-base text-gray-500">Tidak ada kategori</p>
                   ) : (
                     categories.map(cat => (
                       <button
@@ -149,7 +149,7 @@ export default function Navbar() {
                           navigate(`/items?category=${encodeURIComponent(cat.slug)}`);
                           setCategoryOpen(false);
                         }}
-                        className="flex justify-between w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                        className="flex justify-between w-full px-4 py-2 text-left text-base hover:bg-gray-100"
                       >
                         <span>{cat.name}</span>
                       </button>
@@ -184,7 +184,7 @@ export default function Navbar() {
                 <ShoppingCart size={22} strokeWidth={1.75} className="text-gray-700" />
               </button>
               {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-2 text-xs text-white bg-[#3e6dc8] w-[18px] h-[18px] flex items-center justify-center rounded-full">
+                <span className="absolute -top-1.5 -right-2 text-sm text-white bg-[#3e6dc8] w-[18px] h-[18px] flex items-center justify-center rounded-full">
                   {cartCount}
                 </span>
               )}
@@ -192,11 +192,11 @@ export default function Navbar() {
                 <div className={`${dropdownClass} w-80`}>
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium">Keranjang</h4>
-                    {cartCount > 0 && <Link to="/cart" className="text-[#3e6dc8] hover:underline text-sm">Lihat semua</Link>}
+                    {cartCount > 0 && <Link to="/cart" className="text-[#3e6dc8] hover:underline text-base">Lihat semua</Link>}
                   </div>
                   <div className="w-full h-px bg-gray-200 my-2"></div>
                   {cartItems.length === 0 ? (
-                    <p className="text-sm text-gray-600 py-3">Keranjang kosong</p>
+                    <p className="text-base text-gray-600 py-3">Keranjang kosong</p>
                   ) : (
                     <div className="max-h-[260px] overflow-y-auto pr-1">
                       {cartItems.map(cartItem => (
@@ -207,8 +207,8 @@ export default function Navbar() {
                             className="w-12 h-12 rounded-md object-cover border"
                           />
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium">{cartItem.item.title}</span>
-                            <span className="text-sm text-gray-600">Rp {cartItem.item.price.toLocaleString("id-ID")}</span>
+                            <span className="text-base font-medium">{cartItem.item.title}</span>
+                            <span className="text-base text-gray-600">Rp {cartItem.item.price.toLocaleString("id-ID")}</span>
                           </div>
                         </div>
                       ))}
@@ -224,7 +224,7 @@ export default function Navbar() {
                 <Bell size={22} strokeWidth={1.75} className="text-gray-700" />
               </button>
               {notifications.length > 0 && (
-                <span className="absolute -top-1.5 -right-2 text-xs text-white bg-red-500 w-[18px] h-[18px] flex items-center justify-center rounded-full">
+                <span className="absolute -top-1.5 -right-2 text-sm text-white bg-red-500 w-[18px] h-[18px] flex items-center justify-center rounded-full">
                   {notifications.length}
                 </span>
               )}
@@ -233,10 +233,10 @@ export default function Navbar() {
                   <h4 className="font-medium">Notifikasi</h4>
                   <div className="h-px bg-gray-200 my-2"></div>
                   {notifications.length === 0 ? (
-                    <p className="text-sm text-gray-600">Tidak ada notifikasi</p>
+                    <p className="text-base text-gray-600">Tidak ada notifikasi</p>
                   ) : (
                     notifications.map((notif, i) => (
-                      <div key={i} className="py-2 text-sm">{notif}</div>
+                      <div key={i} className="py-2 text-base">{notif}</div>
                     ))
                   )}
                 </div>
@@ -271,16 +271,16 @@ export default function Navbar() {
                         className="w-12 h-12 rounded-full border"
                       />
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium">{auth.user.name}</span>
-                        <span className="text-xs text-gray-500">{auth.user.email}</span>
+                        <span className="text-base font-medium">{auth.user.name}</span>
+                        <span className="text-sm text-gray-500">{auth.user.email}</span>
                       </div>
                     </div>
                     <div className="border-t my-1"></div>
-                    <button onClick={() => navigate("/profile")} className="flex justify-between w-full px-4 py-2 hover:bg-gray-100 text-sm">
+                    <button onClick={() => navigate("/profile")} className="flex justify-between w-full px-4 py-2 hover:bg-gray-100 text-base">
                       <span>Akun</span>
                       <ChevronRight size={16} className="text-gray-400" />
                     </button>
-                    <button onClick={() => navigate("/orders")} className="flex justify-between w-full px-4 py-2 hover:bg-gray-100 text-sm">
+                    <button onClick={() => navigate("/orders")} className="flex justify-between w-full px-4 py-2 hover:bg-gray-100 text-base">
                       <span>Transaksi</span>
                       <ChevronRight size={16} className="text-gray-400" />
                     </button>
@@ -288,7 +288,7 @@ export default function Navbar() {
                     <button onClick={() => {
                       logout();
                       setCartItems([]);
-                    }} className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600">Keluar</button>
+                    }} className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-base text-red-600">Keluar</button>
                   </div>
                 )}
               </div>
