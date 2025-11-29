@@ -1,238 +1,306 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-import {
-  Home,
-  Menu,
-  User,
-  LogIn,
-  Search,
-  ShoppingCart,
-} from "lucide-react";
+
+import { getCategories } from "../api/categories";
+import { getCart } from "../api/cart";
+
+import { useState, useRef, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+
+import { Menu, Search, ShoppingCart, Bell, ChevronDown, ChevronRight } from "lucide-react";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // ---------------- UI States ----------------
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  // ---------------- Data States ----------------
+  const [categories, setCategories] = useState([]);
+  const [loadingCats, setLoadingCats] = useState(true);
+  const [cartItems, setCartItems] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // ---------------- Context ----------------
   const { auth, logout, loading } = useAuth();
   const { cartCount, fetchCartCount } = useCart();
 
-  const [mobileSearch, setMobileSearch] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef(null);
+  // ---------------- Refs ----------------
+  const categoryRef = useRef(null);
+  const cartRef = useRef(null);
+  const notifRef = useRef(null);
+  const userMenuRef = useRef(null);
 
-  const categories = [
-    { name: "Fantasy", slug: "fantasy" },
-    { name: "Fiction", slug: "fiction" },
-    { name: "Finance", slug: "finance" },
-  ];
+  const notifications = []; // placeholder
 
-  const navLinks = [
-    { label: "Shop", path: "/items" },
-    ...categories.map((cat) => ({
-      label: cat.name,
-      path: `/items?category=${cat.slug}`,
-    })),
-  ];
+  // ---------------- Dropdown Styling ----------------
+  const dropdownClass = "absolute right-0 top-8 bg-white shadow-lg border border-gray-200 rounded-md p-3 z-50 transition-all duration-200 origin-top";
 
-  const isActive = (path) => location.pathname + location.search === path;
-
+  // ---------------- Fetch Categories ----------------
   useEffect(() => {
-    const handler = () => fetchCartCount();
-    window.addEventListener("cartUpdated", handler);
-    return () => window.removeEventListener("cartUpdated", handler);
+    const fetchCats = async () => {
+      try {
+        const res = await getCategories();
+        setCategories(res.data.data || []);
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      } finally {
+        setLoadingCats(false);
+      }
+    };
+    fetchCats();
   }, []);
 
-  // Close dropdown jika klik di luar
+  // ---------------- Fetch Cart Items ----------------
+  const loadCart = async () => {
+    try {
+      const res = await getCart();
+      const items = Array.isArray(res.data.data.cart_items) ? res.data.data.cart_items : [];
+      setCartItems(items);
+    } catch (err) {
+      console.error("Error fetching cart items:", err);
+      setCartItems([]);
+    }
+  };
+
+  useEffect(() => {
+    loadCart();
+
+    const handleCartUpdate = () => {
+      fetchCartCount(); // update counter global
+      loadCart();        // update daftar item
+    };
+
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    return () => window.removeEventListener("cartUpdated", handleCartUpdate);
+  }, []);
+
+  // ---------------- Close Dropdowns on Outside Click ----------------
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setShowDropdown(false);
-      }
+      if (categoryRef.current && !categoryRef.current.contains(e.target)) setCategoryOpen(false);
+      if (cartRef.current && !cartRef.current.contains(e.target)) setCartOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleMobileSearch = (e) => {
-    e.preventDefault();
-    if (mobileSearch.trim() === "") return;
-    navigate(`/items?search=${encodeURIComponent(mobileSearch.trim())}`);
-    setMobileSearch("");
+  // ---------------- Close Dropdowns on Page Navigation ----------------
+  useEffect(() => {
+    setCategoryOpen(false);
+    setCartOpen(false);
+    setNotifOpen(false);
+    setUserMenuOpen(false);
+  }, [location.pathname]);
+
+  // ---------------- Search Handler ----------------
+  const handleSearch = () => {
+    if (!searchTerm.trim()) return;
+    navigate(`/items?search=${encodeURIComponent(searchTerm.trim())}`);
   };
 
   return (
-    <header className="relative bg-white border-b border-gray-200">
-      <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          {/* Desktop logo */}
-          <div
-            onClick={() => navigate("/")}
-            className="ml-4 hidden lg:flex lg:ml-0 cursor-pointer"
-          >
-            <img
-              src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=blue&shade=600"
-              alt="Logo"
-              className="h-8 w-auto"
+    <nav className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-300 bg-white">
+
+      {/* Logo */}
+      <Link to="/">
+        <img
+          className="h-9"
+          src="https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/dummyLogo/dummyLogoColored.svg"
+          alt="logo"
+        />
+      </Link>
+
+      {/* Mobile Menu Toggle */}
+      <button aria-label="Menu" onClick={() => setMenuOpen(!menuOpen)} className="sm:hidden">
+        <Menu size={24} strokeWidth={1.75} className="text-gray-700" />
+      </button>
+
+      {/* Desktop Navigation */}
+      <div className="hidden sm:flex items-center w-full justify-between">
+
+        {/* LEFT SIDE */}
+        <div className="flex items-center gap-12 flex-1">
+
+          {/* Category Dropdown */}
+          <div className="relative ml-12" ref={categoryRef}>
+            <button onClick={() => setCategoryOpen(!categoryOpen)} className="flex items-center gap-1 cursor-pointer font-medium">
+              Kategori
+              <ChevronDown size={18} className={`transition-transform duration-200 ${categoryOpen ? "rotate-180" : ""}`} />
+            </button>
+            {categoryOpen && (
+              <div className="absolute top-8 left-0 w-48 bg-white shadow-md border rounded-md py-2 z-50">
+                {loadingCats ? (
+                  <p className="px-4 py-2 text-sm text-gray-500">Loading...</p>
+                ) : categories.length === 0 ? (
+                  <p className="px-4 py-2 text-sm text-gray-500">Tidak ada kategori</p>
+                ) : (
+                  categories.map(cat => (
+                    <button
+                      key={cat.slug}
+                      onClick={() => {
+                        navigate(`/items?category=${encodeURIComponent(cat.slug)}`);
+                        setCategoryOpen(false);
+                      }}
+                      className="flex justify-between w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                    >
+                      <span>{cat.name}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Search Bar */}
+          <div className="hidden lg:flex items-center gap-3 border border-gray-300 px-4 rounded-full flex-1 h-[42px]">
+            <input
+              className="w-full bg-transparent outline-none placeholder-gray-500 h-full"
+              type="text"
+              placeholder="Search products"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
+            <button onClick={handleSearch}>
+              <Search size={22} strokeWidth={1.4} className="text-gray-500" />
+            </button>
           </div>
+        </div>
 
-          {/* Desktop nav links */}
-          <div className="ml-8 hidden lg:flex lg:space-x-8">
-            {navLinks.map((item) => (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className={`text-sm font-medium transition ${
-                  isActive(item.path)
-                    ? "text-[#3e6dc8] border-b-2 border-[#3e6dc8]"
-                    : "text-gray-700 hover:text-[#3e6dc8]"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+        {/* RIGHT SIDE */}
+        <div className="flex items-center gap-6 ms-6">
 
-          {/* Desktop right side */}
-          <div className="hidden lg:flex ml-auto items-center relative">
-            {loading ? (
-              <div className="w-24 h-5 bg-gray-200 rounded animate-pulse" />
-            ) : auth.user ? (
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setShowDropdown(!showDropdown)}
-                  className="text-sm font-medium text-gray-700 mr-4 hover:text-[#3e6dc8] flex items-center"
-                >
-                  Hi, {auth.user.name}
-                </button>
-
-                {showDropdown && (
-                  <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 shadow-sm rounded-md z-50 animate-fade-in">
-                    <button
-                      onClick={() => { navigate("/profile"); setShowDropdown(false); }}
-                      className="w-full flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition"
-                    >
-                      <User className="w-4 h-4 mr-2" />
-                      Profile
-                    </button>
-                    <button
-                      onClick={() => { logout(); setShowDropdown(false); }}
-                      className="w-full flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition"
-                    >
-                      <LogIn className="w-4 h-4 mr-2 rotate-180" />
-                      Logout
-                    </button>
+          {/* Cart Dropdown */}
+          <div className="relative flex items-center" ref={cartRef}>
+            <button onClick={() => setCartOpen(!cartOpen)}>
+              <ShoppingCart size={22} strokeWidth={1.75} className="text-gray-700" />
+            </button>
+            {cartCount > 0 && (
+              <span className="absolute -top-1.5 -right-2 text-xs text-white bg-[#3e6dc8] w-[18px] h-[18px] flex items-center justify-center rounded-full">
+                {cartCount}
+              </span>
+            )}
+            {cartOpen && (
+              <div className={`${dropdownClass} w-80`}>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Keranjang</h4>
+                  {cartCount > 0 && <Link to="/cart" className="text-[#3e6dc8] hover:underline text-sm">Lihat semua</Link>}
+                </div>
+                <div className="w-full h-px bg-gray-200 my-2"></div>
+                {cartItems.length === 0 ? (
+                  <p className="text-sm text-gray-600 py-3">Keranjang kosong</p>
+                ) : (
+                  <div className="max-h-[260px] overflow-y-auto pr-1">
+                    {cartItems.map(cartItem => (
+                      <div key={cartItem.id} className="flex items-center gap-3 py-2">
+                        <img
+                          src={cartItem.item.image || `https://picsum.photos/50/50?random=${cartItem.id}`}
+                          alt={cartItem.item.title}
+                          className="w-12 h-12 rounded-md object-cover border"
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium">{cartItem.item.title}</span>
+                          <span className="text-sm text-gray-600">Rp {cartItem.item.price.toLocaleString("id-ID")}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-            ) : (
-              <>
-                <button
-                  onClick={() => navigate("/login")}
-                  className="text-sm font-medium text-gray-700 hover:text-[#3e6dc8] mr-4 flex items-center"
-                >
-                  <LogIn className="w-5 h-5 mr-1" />
-                  Sign in
-                </button>
-                <button
-                  onClick={() => navigate("/register")}
-                  className="text-sm font-medium text-gray-700 hover:text-[#3e6dc8] mr-4"
-                >
-                  Create account
-                </button>
-              </>
             )}
-
-            {/* Cart icon */}
-            <button
-              onClick={() => navigate(auth.user ? "/cart" : "/login")}
-              className="relative -m-2 flex items-center p-2"
-            >
-              <ShoppingCart className="w-6 h-6 text-gray-700 hover:text-[#3e6dc8]" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-                  {cartCount}
-                </span>
-              )}
-            </button>
           </div>
 
-          {/* Mobile: search form + cart */}
-          <div className="lg:hidden flex items-center space-x-2 px-2">
-            <form
-              onSubmit={handleMobileSearch}
-              className="flex flex-1 items-center bg-gray-100 rounded-md px-3 py-2"
-            >
-              <input
-                type="text"
-                placeholder="Search..."
-                value={mobileSearch}
-                onChange={(e) => setMobileSearch(e.target.value)}
-                className="flex-1 bg-transparent focus:outline-none text-sm"
+          {/* Notifications Dropdown */}
+          <div className="relative flex items-center" ref={notifRef}>
+            <button onClick={() => setNotifOpen(!notifOpen)}>
+              <Bell size={22} strokeWidth={1.75} className="text-gray-700" />
+            </button>
+            {notifications.length > 0 && (
+              <span className="absolute -top-1.5 -right-2 text-xs text-white bg-red-500 w-[18px] h-[18px] flex items-center justify-center rounded-full">
+                {notifications.length}
+              </span>
+            )}
+            {notifOpen && (
+              <div className={`${dropdownClass} w-80`}>
+                <h4 className="font-medium">Notifikasi</h4>
+                <div className="h-px bg-gray-200 my-2"></div>
+                {notifications.length === 0 ? (
+                  <p className="text-sm text-gray-600">Tidak ada notifikasi</p>
+                ) : (
+                  notifications.map((notif, i) => (
+                    <div key={i} className="py-2 text-sm">{notif}</div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Divider */}
+          <div className="h-7 w-px bg-gray-300 mx-3"></div>
+
+          {/* User Avatar Dropdown with Name/Email/Wider + ChevronRight */}
+          {loading ? (
+            <span>Loading...</span>
+          ) : auth?.user ? (
+            <div className="relative flex items-center gap-1" ref={userMenuRef}>
+              <img
+                src="https://ebooks.gramedia.com/static/media/profile_default.e0deee7514910eaa9c5ac27a34086e64.svg"
+                alt="avatar"
+                className="w-10 h-10 rounded-full border cursor-pointer"
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
               />
-              <button type="submit" className="ml-2 text-gray-500 hover:text-[#3e6dc8]">
-                <Search className="w-5 h-5" />
-              </button>
-            </form>
-
-            <button
-              onClick={() => navigate(auth.user ? "/cart" : "/login")}
-              className="relative flex-shrink-0 p-2"
-            >
-              <ShoppingCart className="w-6 h-6 text-gray-700 hover:text-[#3e6dc8]" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-                  {cartCount}
-                </span>
+              <ChevronDown
+                size={18}
+                className={`transition-transform duration-200 ${userMenuOpen ? "rotate-180" : ""}`}
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+              />
+              {userMenuOpen && (
+                <div className={`${dropdownClass} w-80 right-0 mt-2`}>
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <img
+                      src="https://ebooks.gramedia.com/static/media/profile_default.e0deee7514910eaa9c5ac27a34086e64.svg"
+                      alt="avatar"
+                      className="w-12 h-12 rounded-full border"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{auth.user.name}</span>
+                      <span className="text-xs text-gray-500">{auth.user.email}</span>
+                    </div>
+                  </div>
+                  <div className="border-t my-1"></div>
+                  <button onClick={() => navigate("/profile")} className="flex justify-between w-full px-4 py-2 hover:bg-gray-100 text-sm">
+                    <span>Akun</span>
+                    <ChevronRight size={16} className="text-gray-400" />
+                  </button>
+                  <button onClick={() => navigate("/orders")} className="flex justify-between w-full px-4 py-2 hover:bg-gray-100 text-sm">
+                    <span>Transaksi</span>
+                    <ChevronRight size={16} className="text-gray-400" />
+                  </button>
+                  <div className="border-t my-1"></div>
+                  <button onClick={() => {
+                    logout();
+                    setCartItems([]); // clear cart saat logout
+                  }} className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600">Keluar</button>
+                </div>
               )}
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* Mobile bottom nav */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md z-50">
-        <div className="flex justify-around items-center h-16">
-          <button
-            onClick={() => navigate("/")}
-            className={`flex flex-col items-center justify-center ${
-              isActive("/") ? "text-[#3e6dc8]" : "text-gray-700 hover:text-[#3e6dc8]"
-            }`}
-          >
-            <Home className="w-6 h-6 mb-1" />
-            <span className="text-xs">Home</span>
-          </button>
-
-          <button
-            onClick={() => navigate("/items")}
-            className={`flex flex-col items-center justify-center ${
-              location.pathname.startsWith("/items") ? "text-[#3e6dc8]" : "text-gray-700 hover:text-[#3e6dc8]"
-            }`}
-          >
-            <Menu className="w-6 h-6 mb-1" />
-            <span className="text-xs">Categories</span>
-          </button>
-
-          {auth.user ? (
-            <button
-              onClick={() => navigate("/profile")}
-              className="flex flex-col items-center justify-center text-gray-700 hover:text-[#3e6dc8]"
-            >
-              <User className="w-6 h-6 mb-1" />
-              <span className="text-xs">Profile</span>
-            </button>
+            </div>
           ) : (
-            <button
-              onClick={() => navigate("/login")}
-              className="flex flex-col items-center justify-center text-gray-700 hover:text-[#3e6dc8]"
-            >
-              <LogIn className="w-6 h-6 mb-1" />
-              <span className="text-xs">Login</span>
-            </button>
+            <div className="flex items-center gap-4">
+              <Link to="/login" className="px-5 py-2 border border-gray-300 rounded-full hover:bg-gray-100 transition">Masuk</Link>
+              <Link to="/register" className="px-6 py-2 bg-[#3e6dc8] hover:bg-[#345ab0] text-white rounded-full transition">Daftar</Link>
+            </div>
           )}
+
         </div>
       </div>
-    </header>
+    </nav>
   );
 }
