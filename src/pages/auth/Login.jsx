@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import Button from "../../components/Button";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const { login } = useAuth();
@@ -9,15 +11,19 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async e => {
     e.preventDefault();
     setError("");
+    setLoading(true);
     try {
       await login(email, password);
       navigate("/");
     } catch (err) {
-      setError(err.message || "Login failed");
+      setError(err.message || "Login gagal");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -31,10 +37,10 @@ export default function Login() {
             <div>
               <div className="mb-6 sm:mb-8">
                 <h1 className="text-3xl font-semibold text-gray-800 dark:text-white mb-2">
-                  Sign In
+                  Masuk
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Enter your email and password to sign in!
+                  Masukkan email dan kata sandi Anda untuk masuk
                 </p>
               </div>
 
@@ -58,12 +64,12 @@ export default function Login() {
                 {/* Password */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Password<span className="text-red-500">*</span>
+                    Kata Sandi<span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
+                      placeholder="Masukkan kata sandi"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       required
@@ -73,27 +79,10 @@ export default function Login() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute top-1/2 right-4 -translate-y-1/2 cursor-pointer text-gray-500 dark:text-gray-400"
                     >
-                      {showPassword ? (
-                        <svg
-                          width="20"
-                          height="20"
-                          fill="currentColor"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path d="M4.638 3.577a.708.708 0 0 0-1.06 0 .708.708 0 0 0 0 1.06l1.276 1.276C3.746 6.842 2.894 8.064 2.415 9.459c-.054.158-.054.329 0 .486 1.08 3.15 4.067 5.416 7.585 5.416 1.255 0 2.442-.288 3.5-.802l1.863 1.863a.75.75 0 1 0 1.06-1.06L4.638 3.577Z" />
-                        </svg>
-                      ) : (
-                        <svg
-                          width="20"
-                          height="20"
-                          fill="currentColor"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path d="M10 4.043C6.482 4.043 3.495 6.309 2.415 9.459a.743.743 0 0 0 0 .486C3.495 13.096 6.482 15.362 10 15.362c3.518 0 6.505-2.266 7.585-5.416a.743.743 0 0 0 0-.486C16.505 6.309 13.518 4.043 10 4.043Zm0 9.819a3.118 3.118 0 1 1 0-6.236 3.118 3.118 0 0 1 0 6.236Z" />
-                        </svg>
-                      )}
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </span>
                   </div>
+
                 </div>
 
                 {/* Error message */}
@@ -108,34 +97,34 @@ export default function Login() {
                       type="checkbox"
                       className="mr-2 h-4 w-4 rounded border-gray-300 text-[#3e6dc8] focus:ring-[#3e6dc8]"
                     />
-                    Keep me logged in
+                    Ingat saya
                   </label>
                   <button
                     type="button"
                     onClick={() => navigate("/forgot-password")}
                     className="text-[#3e6dc8] hover:text-[#345ba3]"
                   >
-                    Forgot password?
+                    Lupa kata sandi?
                   </button>
                 </div>
 
                 {/* Submit */}
-                <button
+                <Button
+                  text="Masuk"
                   type="submit"
-                  className="bg-[#3e6dc8] hover:bg-[#345ba3] flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-medium text-white transition"
-                >
-                  Sign In
-                </button>
+                  className="w-full"
+                  loading={loading}
+                />
               </form>
 
               {/* Register */}
               <div className="mt-5 text-center text-sm text-gray-700 dark:text-gray-400">
-                Don't have an account?{" "}
+                Belum punya akun?{" "}
                 <span
                   className="text-[#3e6dc8] hover:underline cursor-pointer"
                   onClick={() => navigate("/register")}
                 >
-                  Sign Up
+                  Daftar
                 </span>
               </div>
             </div>
@@ -151,7 +140,7 @@ export default function Login() {
               className="mx-auto mb-4 w-16 h-16"
             />
             <p className="text-white/90">
-              Free and Open-Source Tailwind CSS Admin Dashboard Template
+              Template Dashboard Admin Tailwind CSS Gratis & Open-Source
             </p>
           </div>
         </div>

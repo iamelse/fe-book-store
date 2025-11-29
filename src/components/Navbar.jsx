@@ -8,6 +8,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
 import { Menu, Search, ShoppingCart, Bell, ChevronDown, ChevronRight } from "lucide-react";
+import LinkButton from "./ButtonLink";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -302,8 +303,8 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="flex items-center gap-4">
-                <Link to="/login" className="px-5 py-2 border border-gray-300 rounded-full hover:bg-gray-100 transition">Masuk</Link>
-                <Link to="/register" className="px-6 py-2 bg-[#3e6dc8] hover:bg-[#345ab0] text-white rounded-full transition">Daftar</Link>
+                <LinkButton text="Masuk" to="/login" variant="secondary" />
+                <LinkButton text="Daftar" to="/register" variant="primary" />
               </div>
             )}
 

@@ -9,6 +9,7 @@ import { formatPrice } from "../utils/format";
 import { Star, Minus, Plus } from "lucide-react";
 import Cookies from "js-cookie";
 import axios from "axios";
+import Button from "../components/Button";
 
 const BASE_URL = "http://127.0.0.1:8000/api/v1";
 
@@ -27,7 +28,7 @@ export default function ItemDetail() {
   const [message, setMessage] = useState("");
   const [activeImage, setActiveImage] = useState(0);
 
-  // Fetch item
+  // Ambil data item
   useEffect(() => {
     const fetchItem = async () => {
       setLoading(true);
@@ -51,7 +52,7 @@ export default function ItemDetail() {
     fetchItem();
   }, [slug]);
 
-  // Set page title & meta
+  // Set title & meta page
   useEffect(() => {
     if (item?.title) {
       document.title = `${item.title} | Bookify`;
@@ -66,9 +67,9 @@ export default function ItemDetail() {
       }
       metaDesc.content = description;
     } else if (notFound) {
-      document.title = "404 Not Found | Bookify";
+      document.title = "404 Tidak Ditemukan | Bookify";
     } else {
-      document.title = "Loading Item... | Bookify";
+      document.title = "Memuat Item... | Bookify";
     }
   }, [item, notFound]);
 
@@ -79,10 +80,10 @@ export default function ItemDetail() {
     setAdding(true);
     try {
       await addToCart({ item_id: item.id, quantity });
-      setMessage(`Added ${quantity} ${item.title} to cart!`);
+      setMessage(`${quantity} buku "${item.title}" berhasil ditambahkan ke keranjang!`);
       window.dispatchEvent(new Event("cartUpdated"));
     } catch (err) {
-      setMessage(err.response?.data?.message || "Failed to add to cart");
+      setMessage(err.response?.data?.message || "Gagal menambahkan ke keranjang");
     } finally {
       setAdding(false);
     }
@@ -113,11 +114,11 @@ export default function ItemDetail() {
       if (paymentRes.data.data?.redirect_url) {
         window.location.href = paymentRes.data.data.redirect_url;
       } else {
-        setMessage("Payment created successfully!");
+        setMessage("Pembayaran berhasil dibuat!");
         navigate(`/payment/${orderId}`);
       }
     } catch (err) {
-      setMessage(err.response?.data?.message || "Failed to buy item");
+      setMessage(err.response?.data?.message || "Gagal membeli item");
     } finally {
       setBuying(false);
     }
@@ -138,14 +139,12 @@ export default function ItemDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* LEFT: IMAGES */}
       <section className="max-w-7xl mx-auto px-6 py-12 md:py-16 flex flex-col md:flex-row gap-10">
         <div className="md:w-1/2 flex flex-col items-center">
           <div className="w-full aspect-square rounded-lg overflow-hidden mb-4">
             <img src={images[activeImage]} alt={item.title} className="w-full h-full object-cover" />
           </div>
 
-          {/* THUMBNAILS */}
           {images.length > 1 && (
             <div className="relative w-full flex space-x-2 overflow-x-auto scrollbar-hide">
               {images.slice(0, 12).map((img, idx) => (
@@ -165,18 +164,17 @@ export default function ItemDetail() {
           )}
         </div>
 
-        {/* RIGHT: INFO */}
         <div className="md:w-1/2 flex flex-col justify-start items-start space-y-4">
-          <p className="text-sm text-gray-500 uppercase">{item.category?.name || "Fiction"}</p>
+          <p className="text-sm text-gray-500 uppercase">{item.category?.name || "Fiksi"}</p>
           <h1 className="text-3xl font-bold">{item.title}</h1>
-          <p className="text-gray-700">{item.author || "Unknown Author"}</p>
+          <p className="text-gray-700">{item.author || "Penulis Tidak Diketahui"}</p>
           <div className="flex items-center space-x-1">
             <Star size={16} className="text-yellow-400 fill-yellow-400" />
             <span className="text-sm font-medium">{rating}</span>
           </div>
 
           <div className="flex items-center space-x-3">
-            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">20% OFF</span>
+            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">Diskon 20%</span>
             <p className="text-xl text-gray-400 line-through">{formatPrice(item.price)}</p>
             <p className="text-2xl font-bold text-[#3e6dc8]">{formatPrice(Math.round(item.price * 0.8))}</p>
           </div>
@@ -184,12 +182,11 @@ export default function ItemDetail() {
           <p className={`inline-block px-3 py-1 rounded-md text-sm font-medium ${
             stock > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
           }`}>
-            {stock > 0 ? `${stock} in stock` : "Out of stock"}
+            {stock > 0 ? `${stock} tersedia` : "Stok habis"}
           </p>
 
           {item.description && <p className="text-gray-700 mt-2">{item.description}</p>}
 
-          {/* QUANTITY & ACTIONS */}
           <div className="flex flex-col gap-3 mt-4 w-full">
             <div className="flex items-center gap-3">
               <div className="qty-input-wrapper flex items-center border border-gray-300 rounded-lg overflow-hidden">
@@ -200,8 +197,23 @@ export default function ItemDetail() {
             </div>
 
             <div className="flex gap-3 pt-4 w-full">
-              <button onClick={handleAddToCart} disabled={adding || stock === 0} className="px-5 py-3 rounded-lg font-medium border text-[#3e6dc8] border-[#3e6dc8] bg-white hover:bg-[#e0e7ff] disabled:opacity-50">{adding ? "Adding..." : "Add to Cart"}</button>
-              <button onClick={handleBuyNow} disabled={buying || stock === 0} className="px-5 py-3 rounded-lg text-white font-medium bg-[#3e6dc8] hover:bg-[#345ab0] disabled:opacity-50">{buying ? "Processing..." : "Buy Now"}</button>
+              <Button
+                text="Tambah ke Keranjang"
+                onClick={handleAddToCart}
+                variant="secondary"
+                loading={adding}
+                disabled={stock === 0}
+                className="font-medium"
+              />
+
+              <Button
+                text="Beli Sekarang"
+                onClick={handleBuyNow}
+                variant="primary"
+                loading={buying}
+                disabled={stock === 0}
+                className="font-medium"
+              />
             </div>
           </div>
 
