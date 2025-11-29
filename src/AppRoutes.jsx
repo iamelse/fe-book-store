@@ -1,16 +1,18 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "../src/context/AuthContext";
-import Login from "../src/pages/auth/Login";
-import Register from "../src/pages/auth/Register";
-import Home from "../src/pages/Home";
-import Items from "../src/pages/Items";
-import ItemDetail from "../src/pages/ItemDetail";
-import Cart from "../src/pages/Cart";
-import Payment from "../src/pages/Payment";
-import Orders from "../src/pages/Orders";
-import AdminDashboard from "../src/pages/admin/Dashboard";
-import NotFound from "../src/pages/NotFound";
-import FullscreenLoader from "../src/components/FullscreenLoader";
+import { useAuth } from "./context/AuthContext";
+import Home from "./pages/Home";
+import Items from "./pages/Items";
+import ItemDetail from "./pages/ItemDetail";
+import Cart from "./pages/Cart";
+import Payment from "./pages/Payment";
+import Orders from "./pages/Orders";
+import AdminDashboard from "./pages/admin/Dashboard";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import NotFound from "./pages/NotFound";
+import FullscreenLoader from "./components/FullscreenLoader";
+import MainLayout from "./layouts/MainLayout";
+import AuthLayout from "./layouts/AuthLayout";
 
 export default function AppRoutes() {
   const { auth, loading } = useAuth();
@@ -19,22 +21,82 @@ export default function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/" element={<Home />} />
-      <Route path="/items" element={<Items />} />
-      <Route path="/items/:slug" element={<ItemDetail />} />
-      <Route path="/cart" element={<Cart />} />
-      <Route path="/payment/:orderId" element={<Payment />} />
+      {/* Auth pages */}
+      <Route
+        path="/login"
+        element={
+          <AuthLayout>
+            <Login />
+          </AuthLayout>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <AuthLayout>
+            <Register />
+          </AuthLayout>
+        }
+      />
 
+      {/* Main pages */}
+      <Route
+        path="/"
+        element={
+          <MainLayout>
+            <Home />
+          </MainLayout>
+        }
+      />
+      <Route
+        path="/items"
+        element={
+          <MainLayout>
+            <Items />
+          </MainLayout>
+        }
+      />
+      <Route
+        path="/items/:slug"
+        element={
+          <MainLayout>
+            <ItemDetail />
+          </MainLayout>
+        }
+      />
+      <Route
+        path="/cart"
+        element={
+          <MainLayout>
+            <Cart />
+          </MainLayout>
+        }
+      />
+      <Route
+        path="/payment/:orderId"
+        element={
+          <MainLayout>
+            <Payment />
+          </MainLayout>
+        }
+      />
       <Route
         path="/orders"
-        element={auth.token ? <Orders /> : <Navigate to="/login" replace />}
+        element={
+          <MainLayout>
+            {auth.token ? <Orders /> : <Navigate to="/login" replace />}
+          </MainLayout>
+        }
       />
       <Route
         path="/admin"
-        element={auth.token && auth.role === "admin" ? <AdminDashboard /> : <Navigate to="/login" replace />}
+        element={
+          <MainLayout>
+            {auth.token && auth.role === "admin" ? <AdminDashboard /> : <Navigate to="/login" replace />}
+          </MainLayout>
+        }
       />
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

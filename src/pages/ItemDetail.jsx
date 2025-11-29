@@ -309,8 +309,6 @@ export default function ItemDetail() {
           {message && <p className="text-green-500">{message}</p>}
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }

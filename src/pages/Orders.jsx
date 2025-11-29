@@ -62,7 +62,6 @@ export default function Orders() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
       <div className="p-6 max-w-5xl mx-auto bg-white rounded shadow mt-6">
         <h1 className="text-3xl font-semibold mb-6">My Orders</h1>
 
