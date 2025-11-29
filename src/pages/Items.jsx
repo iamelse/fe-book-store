@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 import ItemCard from "../components/ItemCard";
 import Input from "../components/Input";
 import Button from "../components/Button";
+import LinkButton from "../components/ButtonLink";
 import SelectInput from "../components/SelectInput";
+
 import { getItems } from "../api/items";
 import { getCategories } from "../api/categories";
 
@@ -117,6 +119,13 @@ export default function Items() {
     setSearchParams(params);
   };
 
+  // Function untuk membuat link pagination dengan semua filter tetap ada
+  const createPageLink = (page) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("page", page);
+    return `?${params.toString()}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <section className="max-w-7xl mx-auto px-6 py-10">
@@ -219,18 +228,16 @@ export default function Items() {
             {/* PAGINATION */}
             {pagination && !loading && (
               <div className="flex items-center justify-center gap-2 mt-8">
-                <button
-                  disabled={pagination.current_page <= 1}
-                  onClick={() => goToPage(pagination.current_page - 1)}
-                  className={`px-3 py-2 rounded-lg text-sm border transition ${
-                    pagination.current_page > 1
-                      ? "bg-white hover:bg-gray-100 flex items-center gap-1"
-                      : "bg-gray-200 cursor-not-allowed flex items-center gap-1"
-                  }`}
-                >
-                  <ArrowLeft size={16} /> Sebelumnya
-                </button>
+                {/* Tombol Sebelumnya */}
+                <LinkButton
+                  text={<ChevronLeft size={20} />}
+                  to={createPageLink(pagination.current_page - 1)}
+                  variant="pagination"
+                  disabled={pagination.current_page <= 1 || pagination.last_page <= 1}
+                  className="py-2.5"
+                />
 
+                {/* Tombol nomor halaman */}
                 {(() => {
                   const pages = [];
                   const current = pagination.current_page;
@@ -242,33 +249,27 @@ export default function Items() {
 
                   for (let p = start; p <= end; p++) {
                     pages.push(
-                      <button
+                      <LinkButton
                         key={p}
-                        onClick={() => goToPage(p)}
-                        className={`px-3 py-2 rounded-lg text-sm border transition ${
-                          p === current
-                            ? "bg-[#3e6dc8] text-white border-[#3e6dc8]"
-                            : "bg-white hover:bg-gray-100"
-                        }`}
-                      >
-                        {p}
-                      </button>
+                        text={p}
+                        to={createPageLink(p)}
+                        variant={p === current ? "primary" : "pagination"}
+                        disabled={pagination.last_page <= 1}
+                        className="w-10"
+                      />
                     );
                   }
                   return pages;
                 })()}
 
-                <button
-                  disabled={pagination.current_page >= pagination.last_page}
-                  onClick={() => goToPage(pagination.current_page + 1)}
-                  className={`px-3 py-2 rounded-lg text-sm border transition ${
-                    pagination.current_page < pagination.last_page
-                      ? "bg-white hover:bg-gray-100 flex items-center gap-1"
-                      : "bg-gray-200 cursor-not-allowed flex items-center gap-1"
-                  }`}
-                >
-                  Berikutnya <ArrowRight size={16} />
-                </button>
+                {/* Tombol Berikutnya */}
+                <LinkButton
+                  text={<ChevronRight size={20} />}
+                  to={createPageLink(pagination.current_page + 1)}
+                  variant="pagination"
+                  disabled={pagination.current_page >= pagination.last_page || pagination.last_page <= 1}
+                  className="py-2.5"
+                />
               </div>
             )}
           </div>
