@@ -27,7 +27,7 @@ const buildParams = (params = {}) => {
  */
 export const getCategories = async (params = {}) => {
   const query = buildParams(params);
-  console.log("📤 Fetching categories with params:", query);
+  // console.log("📤 Fetching categories with params:", query);
   return axios.get(`${BASE_URL}/categories`, { params: query });
 };
 
@@ -45,6 +45,6 @@ export const getCategory = async (slug) => {
 export const getCategoryItems = async (slug, params = {}) => {
   if (!slug) throw new Error("Slug is required to fetch category items");
   const query = buildParams(params);
-  console.log(`📤 Fetching items for category "${slug}" with params:`, query);
+  // console.log(`📤 Fetching items for category "${slug}" with params:`, query);
   return axios.get(`${BASE_URL}/categories/${slug}/items`, { params: query });
 };

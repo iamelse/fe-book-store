@@ -58,6 +58,7 @@ export default function Navbar() {
 
   // ---------------- Fetch Cart Items ----------------
   const loadCart = async () => {
+    if (!auth.token) return;
     try {
       const res = await getCart();
       const items = Array.isArray(res.data.data.cart_items) ? res.data.data.cart_items : [];
@@ -196,7 +197,7 @@ export default function Navbar() {
                   </div>
                   <div className="w-full h-px bg-gray-200 my-2"></div>
                   {cartItems.length === 0 ? (
-                    <p className="text-sm text-gray-600 py-3">Keranjang kosong</p>
+                    <p className="text-sm text-gray-600">Keranjang kosong</p>
                   ) : (
                     <div className="max-h-[260px] overflow-y-auto pr-1">
                       {cartItems.map(cartItem => (

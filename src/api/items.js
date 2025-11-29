@@ -29,7 +29,7 @@ const buildParams = (params = {}) => {
 export const getItems = async (params = {}) => {
   const query = buildParams(params);
 
-  console.log("📤 Sending params to API:", query);
+  // console.log("📤 Sending params to API:", query);
 
   return axios.get(`${BASE_URL}/items`, { params: query });
 };
