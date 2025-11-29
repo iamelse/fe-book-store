@@ -1,85 +1,101 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getItems } from "../api/items";
 import ItemCard from "../components/ItemCard";
 import Footer from "../components/Footer";
 
+// Swiper imports
+import { Swiper, SwiperSlide } from "swiper/react";
+import SwiperCore, { Pagination, Autoplay } from "swiper";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+
+// Swiper CSS
+import "swiper/css";
+import "swiper/css/pagination";
+
+SwiperCore.use([Pagination, Autoplay]);
+
 export default function Home() {
   const [latestItems, setLatestItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(true);
   const navigate = useNavigate();
+  const swiperRef = useRef(null);
 
+  const slides = [
+    { image: "https://picsum.photos/id/1015/1200/400", link: "/items/book-1" },
+    { image: "https://picsum.photos/id/1016/1200/400", link: "/items/book-2" },
+    { image: "https://picsum.photos/id/1018/1200/400", link: "/items/book-3" },
+    { image: "https://picsum.photos/id/1020/1200/400", link: "/items/book-4" },
+    { image: "https://picsum.photos/id/1024/1200/400", link: "/items/book-5" },
+  ];
+
+  // Load latest items
   useEffect(() => {
     async function loadItems() {
       try {
-        const res = await getItems({
-          limit: 10,
-          sort: "created_at:desc",
-        });
-
-        // console.log("📦 FULL API RESPONSE:", res);
-        // console.log("📦 res.data:", res?.data);
-        // console.log("📦 res.data.data:", res?.data?.data);
-
-        const data = res?.data?.data;
-
-        // Pastikan items adalah array
-        const safeItems = Array.isArray(data?.items) ? data.items : [];
-
-        // console.log("➡️ SAFE EXTRACTED ITEMS:", safeItems);
-
+        const res = await getItems({ limit: 10, sort: "created_at:desc" });
+        const safeItems = Array.isArray(res?.data?.data?.items)
+          ? res.data.data.items
+          : [];
         setLatestItems(safeItems);
-      } catch (err) {
-        // console.error("❌ ERROR getItems:", err);
-        setLatestItems([]); // tetap array agar .map() tidak error
+      } catch {
+        setLatestItems([]);
       } finally {
         setLoadingItems(false);
       }
     }
-
     loadItems();
   }, []);
 
   return (
     <div className="min-h-screen bg-white">
-      {/* HERO SECTION */}
-      <section className="border-b border-gray-200 min-h-[70vh] md:min-h-screen">
-        <div className="max-w-7xl mx-auto px-6 py-12 md:py-24 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
-          {/* TEXT */}
-          <div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold text-gray-800 leading-tight">
-              Temukan Buku Terbaik Untuk Perjalanan Belajarmu
-            </h1>
-            <p className="text-gray-500 text-sm sm:text-base mt-4 max-w-md">
-              Jelajahi koleksi buku pilihan kami dari berbagai kategori.
-              Temukan buku yang menginspirasi dan menambah wawasanmu.
-            </p>
+      {/* HERO CAROUSEL */}
+      <section className="max-w-7xl mx-auto px-6 pt-10 relative group">
+        <Swiper
+          ref={swiperRef}
+          slidesPerView={1}
+          loop={true}
+          autoplay={{ delay: 3000, disableOnInteraction: false }}
+          pagination={{ clickable: true }}
+          className="rounded-xl overflow-hidden"
+          style={{
+            "--swiper-pagination-color": "white",
+          }}
+        >
+          {slides.map((slide, idx) => (
+            <SwiperSlide key={idx}>
+              <div
+                className="cursor-pointer"
+                onClick={() => navigate(slide.link)}
+              >
+                <img
+                  src={slide.image}
+                  alt={`slide-${idx}`}
+                  className="w-full aspect-[3/1] object-cover rounded-xl"
+                />
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
 
-            <button
-              onClick={() =>
-                document
-                  .getElementById("latestBooks")
-                  .scrollIntoView({ behavior: "smooth" })
-              }
-              className="mt-6 px-5 py-3 sm:px-6 sm:py-3.5 rounded-lg transition text-sm sm:text-base font-medium bg-[#3e6dc8] hover:bg-[#345ab0] text-white"
-            >
-              Jelajahi Buku
-            </button>
-          </div>
+        {/* Custom circular navigation, muncul saat hover/focus */}
+        <button
+          className="absolute left-1 z-10 top-1/2 transform -translate-y-1/2 bg-white w-10 h-10 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+          onClick={() => swiperRef.current.swiper.slidePrev()}
+        >
+          <ArrowLeft size={20} />
+        </button>
 
-          {/* IMAGE */}
-          <div className="hidden md:flex justify-center">
-            <img
-              src="https://picsum.photos/id/29/500/650"
-              alt="Books"
-              className="rounded-xl shadow-lg object-cover max-h-[520px] w-full"
-            />
-          </div>
-        </div>
+        <button
+          className="absolute right-1 z-10 top-1/2 transform -translate-y-1/2 bg-white w-10 h-10 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+          onClick={() => swiperRef.current.swiper.slideNext()}
+        >
+          <ArrowRight size={20} />
+        </button>
       </section>
 
       {/* Koleksi Buku Terbaru */}
-      <div id="latestBooks" className="max-w-7xl mx-auto px-6 mt-14">
+      <div className="max-w-7xl mx-auto px-6 mt-14">
         <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800">
           Koleksi Buku Terbaru
         </h2>
@@ -90,22 +106,22 @@ export default function Home() {
 
       {/* LIST ITEMS */}
       <div className="max-w-7xl mx-auto px-6 pt-6 pb-14">
-        <div className="flex space-x-4 overflow-x-auto scrollbar-hide">
-          {loadingItems ? (
-            <p className="text-gray-500">Memuat data...</p>
-          ) : latestItems.length > 0 ? (
-            latestItems.map((item) => (
+        {loadingItems ? (
+          <p className="text-gray-500">Memuat data...</p>
+        ) : latestItems.length > 0 ? (
+          <div className="flex space-x-4 overflow-x-auto scrollbar-hide">
+            {latestItems.map((item) => (
               <div key={item.slug} className="shrink-0 w-40 sm:w-44 md:w-48">
                 <ItemCard
                   item={item}
                   onClick={() => navigate(`/items/${item.slug}`)}
                 />
               </div>
-            ))
-          ) : (
-            <p className="text-gray-500">Tidak dapat memuat daftar buku.</p>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500">Tidak dapat memuat daftar buku.</p>
+        )}
       </div>
 
       {/* Buku Populer */}
@@ -116,23 +132,6 @@ export default function Home() {
         <p className="text-gray-500 text-sm sm:text-base mt-2 max-w-md">
           Buku-buku pilihan yang bisa kamu baca selanjutnya.
         </p>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 pt-6 pb-24">
-        <div className="flex space-x-4 overflow-x-auto scrollbar-hide">
-          {latestItems.length > 0 ? (
-            latestItems.map((item) => (
-              <div key={item.slug} className="shrink-0 w-40 sm:w-44 md:w-48">
-                <ItemCard
-                  item={item}
-                  onClick={() => navigate(`/items/${item.slug}`)}
-                />
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-500">Tidak ada rekomendasi buku.</p>
-          )}
-        </div>
       </div>
 
       <Footer />
