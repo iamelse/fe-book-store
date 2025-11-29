@@ -164,7 +164,7 @@ export default function Navbar() {
             <input
               className="w-full bg-transparent outline-none placeholder-gray-500 h-full"
               type="text"
-              placeholder="Search products"
+              placeholder="Keyword dari author, title, atau description..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}

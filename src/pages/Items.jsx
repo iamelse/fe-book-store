@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft, ArrowRight } from "lucide-react"; // <-- import icon lucide
 
 import Footer from "../components/Footer";
 import ItemCard from "../components/ItemCard";
@@ -24,7 +25,6 @@ export default function Items() {
     limit: "10",
   });
 
-  // Load URL params → Local filter state
   useEffect(() => {
     const paramsObj = Object.fromEntries(searchParams);
     setLocalFilter({
@@ -35,9 +35,8 @@ export default function Items() {
       sort: paramsObj.sort || "",
       limit: paramsObj.limit || "10",
     });
-  }, []);
+  }, [searchParams]);
 
-  // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -52,7 +51,6 @@ export default function Items() {
 
   const extractItems = (raw) => raw?.data?.items || raw?.items || raw?.data || [];
 
-  // Fetch items with 2s delay + smooth fade
   const fetchItems = async () => {
     setLoading(true);
     try {
@@ -124,61 +122,81 @@ export default function Items() {
           <div className="bg-white p-5 rounded-lg shadow h-fit">
             <h2 className="text-lg font-semibold mb-4 text-gray-800">Filter</h2>
             <div className="flex flex-col gap-4">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="border rounded-lg px-3 py-2 text-sm"
-                value={localFilter.search}
-                onChange={e => handleChange("search", e.target.value)}
-              />
 
-              <select
-                className="border rounded-lg px-3 py-2 text-sm"
-                value={localFilter.category}
-                onChange={e => handleChange("category", e.target.value)}
-              >
-                <option value="">All Categories</option>
-                {categories.map(cat => (
-                  <option key={cat.slug} value={cat.slug}>{cat.name}</option>
-                ))}
-              </select>
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">Cari Buku</label>
+                <input
+                  type="text"
+                  placeholder="Keyword dari author, title, atau description..."
+                  className="border rounded-lg px-3 py-2 text-sm placeholder-gray-500"
+                  value={localFilter.search}
+                  onChange={e => handleChange("search", e.target.value)}
+                />
+              </div>
 
-              <input
-                type="number"
-                placeholder="Min Price"
-                className="border rounded-lg px-3 py-2 text-sm"
-                value={localFilter.min_price}
-                onChange={e => handleChange("min_price", e.target.value)}
-              />
-              <input
-                type="number"
-                placeholder="Max Price"
-                className="border rounded-lg px-3 py-2 text-sm"
-                value={localFilter.max_price}
-                onChange={e => handleChange("max_price", e.target.value)}
-              />
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                <select
+                  className="border rounded-lg px-3 py-2 text-sm text-gray-700"
+                  value={localFilter.category}
+                  onChange={e => handleChange("category", e.target.value)}
+                >
+                  <option value="">Semua Kategori</option>
+                  {categories.map(cat => (
+                    <option key={cat.slug} value={cat.slug}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
 
-              <select
-                className="border rounded-lg px-3 py-2 text-sm"
-                value={localFilter.sort}
-                onChange={e => handleChange("sort", e.target.value)}
-              >
-                <option value="">Sort by</option>
-                <option value="price:asc">Price (Low → High)</option>
-                <option value="price:desc">Price (High → Low)</option>
-                <option value="created_at:desc">Newest</option>
-                <option value="created_at:asc">Oldest</option>
-              </select>
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">Harga Minimum</label>
+                <input
+                  type="number"
+                  placeholder="Harga Minimum"
+                  className="border rounded-lg px-3 py-2 text-sm placeholder-gray-500"
+                  value={localFilter.min_price}
+                  onChange={e => handleChange("min_price", e.target.value)}
+                />
+              </div>
 
-              <select
-                className="border rounded-lg px-3 py-2 text-sm"
-                value={localFilter.limit}
-                onChange={e => handleChange("limit", e.target.value)}
-              >
-                <option value="10">10 / page</option>
-                <option value="20">20 / page</option>
-                <option value="50">50 / page</option>
-              </select>
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">Harga Maksimum</label>
+                <input
+                  type="number"
+                  placeholder="Harga Maksimum"
+                  className="border rounded-lg px-3 py-2 text-sm placeholder-gray-500"
+                  value={localFilter.max_price}
+                  onChange={e => handleChange("max_price", e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">Urutkan</label>
+                <select
+                  className="border rounded-lg px-3 py-2 text-sm text-gray-700"
+                  value={localFilter.sort}
+                  onChange={e => handleChange("sort", e.target.value)}
+                >
+                  <option value="">Urutkan berdasarkan</option>
+                  <option value="price:asc">Harga: Rendah → Tinggi</option>
+                  <option value="price:desc">Harga: Tinggi → Rendah</option>
+                  <option value="created_at:desc">Terbaru</option>
+                  <option value="created_at:asc">Terlama</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">Jumlah / Halaman</label>
+                <select
+                  className="border rounded-lg px-3 py-2 text-sm text-gray-700"
+                  value={localFilter.limit}
+                  onChange={e => handleChange("limit", e.target.value)}
+                >
+                  <option value="10">10 / halaman</option>
+                  <option value="20">20 / halaman</option>
+                  <option value="50">50 / halaman</option>
+                </select>
+              </div>
 
               <button
                 onClick={applyFilter}
@@ -204,7 +222,7 @@ export default function Items() {
             )}
 
             {!loading && items.length === 0 && (
-              <p className="text-center py-10 text-gray-500">No items found.</p>
+              <p className="text-center py-10 text-gray-500">Tidak ada buku ditemukan.</p>
             )}
 
             {!loading && items.length > 0 && (
@@ -219,7 +237,7 @@ export default function Items() {
               </div>
             )}
 
-            {/* PAGINATION */}
+            {/* PAGINASI */}
             {pagination && !loading && (
               <div className="flex items-center justify-center gap-2 mt-8">
                 <button
@@ -227,11 +245,11 @@ export default function Items() {
                   onClick={() => goToPage(pagination.current_page - 1)}
                   className={`px-3 py-2 rounded-lg text-sm border transition ${
                     pagination.current_page > 1
-                      ? "bg-white hover:bg-gray-100"
-                      : "bg-gray-200 cursor-not-allowed"
+                      ? "bg-white hover:bg-gray-100 flex items-center gap-1"
+                      : "bg-gray-200 cursor-not-allowed flex items-center gap-1"
                   }`}
                 >
-                  ← Prev
+                  <ArrowLeft size={16} /> Sebelumnya
                 </button>
 
                 {(() => {
@@ -269,11 +287,11 @@ export default function Items() {
                   onClick={() => goToPage(pagination.current_page + 1)}
                   className={`px-3 py-2 rounded-lg text-sm border transition ${
                     pagination.current_page < pagination.last_page
-                      ? "bg-white hover:bg-gray-100"
-                      : "bg-gray-200 cursor-not-allowed"
+                      ? "bg-white hover:bg-gray-100 flex items-center gap-1"
+                      : "bg-gray-200 cursor-not-allowed flex items-center gap-1"
                   }`}
                 >
-                  Next →
+                  Berikutnya <ArrowRight size={16} />
                 </button>
               </div>
             )}
