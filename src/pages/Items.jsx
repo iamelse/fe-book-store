@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown } from "lucide-react";
 
-import Footer from "../components/Footer";
 import ItemCard from "../components/ItemCard";
+import Input from "../components/Input";
+import Button from "../components/Button";
+import SelectInput from "../components/SelectInput";
 import { getItems } from "../api/items";
 import { getCategories } from "../api/categories";
 
@@ -39,55 +41,55 @@ export default function Items() {
 
   // Fetch categories
   useEffect(() => {
-    const fetchCategories = async () => {
+    async function fetchCategoriesData() {
       try {
         const res = await getCategories();
         setCategories(res.data?.data || []);
       } catch {
         setCategories([]);
       }
-    };
-    fetchCategories();
+    }
+    fetchCategoriesData();
   }, []);
 
   // Extract items safely
   const extractItems = (raw) => raw?.data?.items || raw?.items || raw?.data || [];
 
-  // Fetch items with query params
-  const fetchItems = async () => {
-    setLoading(true);
-    try {
-      const paramsObj = Object.fromEntries(searchParams);
-      const res = await getItems(paramsObj);
-      const parsedItems = extractItems(res.data);
-
-      setTimeout(() => {
-        setItems(parsedItems);
-        setPagination({
-          current_page: res.data?.data?.meta?.pagination?.current_page,
-          last_page: res.data?.data?.meta?.pagination?.last_page,
-          per_page: res.data?.data?.meta?.pagination?.per_page,
-          total: res.data?.data?.meta?.pagination?.total,
-          prev_url: res.data?.data?.links?.prev,
-          next_url: res.data?.data?.links?.next,
-        });
-        setLoading(false);
-      }, 500);
-    } catch (err) {
-      console.error(err);
-      setTimeout(() => {
-        setItems([]);
-        setPagination(null);
-        setLoading(false);
-      }, 500);
-    }
-  };
-
+  // Fetch items
   useEffect(() => {
-    fetchItems();
+    async function fetchItemsData() {
+      setLoading(true);
+      try {
+        const paramsObj = Object.fromEntries(searchParams);
+        const res = await getItems(paramsObj);
+        const parsedItems = extractItems(res.data);
+
+        setTimeout(() => {
+          setItems(parsedItems);
+          setPagination({
+            current_page: res.data?.data?.meta?.pagination?.current_page,
+            last_page: res.data?.data?.meta?.pagination?.last_page,
+            per_page: res.data?.data?.meta?.pagination?.per_page,
+            total: res.data?.data?.meta?.pagination?.total,
+            prev_url: res.data?.data?.links?.prev,
+            next_url: res.data?.data?.links?.next,
+          });
+          setLoading(false);
+        }, 500);
+      } catch (err) {
+        console.error(err);
+        setTimeout(() => {
+          setItems([]);
+          setPagination(null);
+          setLoading(false);
+        }, 500);
+      }
+    }
+    fetchItemsData();
   }, [searchParams]);
 
-  // Apply filter to URL params
+  const handleChange = (key, value) => setLocalFilter(prev => ({ ...prev, [key]: value }));
+
   const applyFilter = () => {
     const params = new URLSearchParams();
     Object.entries(localFilter).forEach(([key, value]) => {
@@ -109,8 +111,6 @@ export default function Items() {
     setSearchParams({ page: 1 });
   };
 
-  const handleChange = (key, value) => setLocalFilter(prev => ({ ...prev, [key]: value }));
-
   const goToPage = (page) => {
     const params = new URLSearchParams(searchParams);
     params.set("page", page);
@@ -125,109 +125,75 @@ export default function Items() {
           Temukan berbagai koleksi buku pilihan dari beragam kategori. Gunakan filter di sebelah kiri.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* SIDEBAR */}
-          <div className="bg-white p-5 rounded-lg shadow h-fit">
-            <h2 className="text-lg font-semibold mb-4 text-gray-800">Filter</h2>
-            <div className="flex flex-col gap-4">
-              {/* Search */}
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">Cari Buku</label>
-                <input
-                  type="text"
-                  placeholder="Keyword dari author, title, atau description..."
-                  className="border rounded-lg px-3 py-2 text-sm placeholder-gray-500"
-                  value={localFilter.search}
-                  onChange={e => handleChange("search", e.target.value)}
-                />
-              </div>
+          <div className="md:col-span-1 bg-white p-6 rounded-lg shadow h-fit flex flex-col gap-5">
+            <h2 className="text-lg font-semibold text-gray-800">Filter</h2>
 
-              {/* Category */}
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                <select
-                  className="border rounded-lg px-3 py-2 text-sm text-gray-700"
-                  value={localFilter.category}
-                  onChange={e => handleChange("category", e.target.value)}
-                >
-                  <option value="">Semua Kategori</option>
-                  {categories.map(cat => (
-                    <option key={cat.slug} value={cat.slug}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
+            <Input
+              label="Cari Buku"
+              placeholder="Keyword dari author, title, atau description..."
+              value={localFilter.search}
+              onChange={e => handleChange("search", e.target.value)}
+            />
 
-              {/* Min Price */}
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">Harga Minimum</label>
-                <input
-                  type="number"
-                  placeholder="Harga Minimum"
-                  className="border rounded-lg px-3 py-2 text-sm placeholder-gray-500"
-                  value={localFilter.min_price}
-                  onChange={e => handleChange("min_price", e.target.value)}
-                />
-              </div>
+            <SelectInput
+              label="Kategori"
+              value={localFilter.category}
+              onChange={e => handleChange("category", e.target.value)}
+              options={categories.map(cat => ({ label: cat.name, value: cat.slug }))}
+              placeholder="Semua Kategori"
+              iconRight={<ChevronDown size={18} />}
+            />
 
-              {/* Max Price */}
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">Harga Maksimum</label>
-                <input
-                  type="number"
-                  placeholder="Harga Maksimum"
-                  className="border rounded-lg px-3 py-2 text-sm placeholder-gray-500"
-                  value={localFilter.max_price}
-                  onChange={e => handleChange("max_price", e.target.value)}
-                />
-              </div>
+            <Input
+              label="Harga Minimum"
+              type="number"
+              placeholder="Harga Minimum"
+              value={localFilter.min_price}
+              onChange={e => handleChange("min_price", e.target.value)}
+            />
 
-              {/* Sort */}
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">Urutkan</label>
-                <select
-                  className="border rounded-lg px-3 py-2 text-sm text-gray-700"
-                  value={localFilter.sort}
-                  onChange={e => handleChange("sort", e.target.value)}
-                >
-                  <option value="">Urutkan berdasarkan</option>
-                  <option value="price:asc">Harga: Rendah → Tinggi</option>
-                  <option value="price:desc">Harga: Tinggi → Rendah</option>
-                  <option value="created_at:desc">Terbaru</option>
-                  <option value="created_at:asc">Terlama</option>
-                </select>
-              </div>
+            <Input
+              label="Harga Maksimum"
+              type="number"
+              placeholder="Harga Maksimum"
+              value={localFilter.max_price}
+              onChange={e => handleChange("max_price", e.target.value)}
+            />
 
-              {/* Limit */}
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">Jumlah / Halaman</label>
-                <select
-                  className="border rounded-lg px-3 py-2 text-sm text-gray-700"
-                  value={localFilter.limit}
-                  onChange={e => handleChange("limit", e.target.value)}
-                >
-                  <option value="10">10 / halaman</option>
-                  <option value="20">20 / halaman</option>
-                  <option value="50">50 / halaman</option>
-                </select>
-              </div>
+            <SelectInput
+              label="Urutkan"
+              value={localFilter.sort}
+              onChange={e => handleChange("sort", e.target.value)}
+              placeholder="Urutkan berdasarkan"
+              options={[
+                { label: "Harga: Rendah → Tinggi", value: "price:asc" },
+                { label: "Harga: Tinggi → Rendah", value: "price:desc" },
+                { label: "Terbaru", value: "created_at:desc" },
+                { label: "Terlama", value: "created_at:asc" },
+              ]}
+              iconRight={<ChevronDown size={18} />}
+            />
 
-              <button
-                onClick={applyFilter}
-                className="bg-[#3e6dc8] hover:bg-[#355faf] text-white font-medium py-2 rounded-lg text-sm transition"
-              >
-                Terapkan Filter
-              </button>
-              <button
-                onClick={resetFilter}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 rounded-lg text-sm transition"
-              >
-                Reset
-              </button>
-            </div>
+            <SelectInput
+              label="Jumlah / Halaman"
+              value={localFilter.limit}
+              onChange={e => handleChange("limit", e.target.value)}
+              options={[
+                { label: "10 / halaman", value: "10" },
+                { label: "20 / halaman", value: "20" },
+                { label: "50 / halaman", value: "50" },
+              ]}
+              iconRight={<ChevronDown size={18} />}
+            />
+
+            <Button text="Terapkan Filter" onClick={applyFilter} />
+            <Button text="Reset" onClick={resetFilter} variant="secondary" />
           </div>
 
           {/* GRID */}
-          <div className="md:col-span-3">
+          <div className="md:col-span-2">
             {loading && (
               <div className="flex justify-center py-10">
                 <div className="w-12 h-12 border-4 border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
@@ -308,7 +274,7 @@ export default function Items() {
           </div>
         </div>
       </section>
-      
+
       <style>{`
         @keyframes fade-in {
           from { opacity: 0; transform: translateY(10px); }

@@ -9,6 +9,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 
 import { Menu, Search, ShoppingCart, Bell, ChevronDown, ChevronRight } from "lucide-react";
 import LinkButton from "./ButtonLink";
+import Input from "./Input";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -126,14 +127,15 @@ export default function Navbar() {
         </button>
 
         {/* Desktop Navigation */}
-        <div className="hidden sm:flex items-center w-full justify-between">
-
+        <div className="hidden sm:flex items-center w-full justify-between gap-6">
           {/* LEFT SIDE */}
-          <div className="flex items-center gap-7 flex-1">
-
+          <div className="flex items-center gap-4 flex-1 mx-6">
             {/* Category Dropdown */}
-            <div className="relative ms-7" ref={categoryRef}>
-              <button onClick={() => setCategoryOpen(!categoryOpen)} className="flex items-center gap-1 cursor-pointer font-medium">
+            <div className="relative" ref={categoryRef}>
+              <button
+                onClick={() => setCategoryOpen(!categoryOpen)}
+                className="flex items-center gap-1 cursor-pointer font-medium text-gray-700"
+              >
                 Kategori
                 <ChevronDown size={18} className={`transition-transform duration-200 ${categoryOpen ? "rotate-180" : ""}`} />
               </button>
@@ -161,25 +163,21 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Search Bar */}
-            <div className="hidden lg:flex items-center gap-3 border border-gray-300 px-4 rounded-full flex-1 h-[42px]">
-              <input
-                className="w-full bg-transparent outline-none placeholder-gray-500 h-full"
-                type="text"
+            {/* Search Bar (Full Width) */}
+            <div className="flex-1">
+              <Input
                 placeholder="Keyword dari author, title, atau description..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                onIconClick={handleSearch}
+                iconRight={<Search size={20} strokeWidth={1.4} className="text-gray-500 cursor-pointer" />}
+                className="w-full h-11"
               />
-              <button onClick={handleSearch}>
-                <Search size={22} strokeWidth={1.4} className="text-gray-500" />
-              </button>
             </div>
           </div>
 
           {/* RIGHT SIDE */}
-          <div className="flex items-center gap-6 ms-6">
-
+          <div className="flex items-center gap-6">
             {/* Cart Dropdown */}
             <div className="relative flex items-center" ref={cartRef}>
               <button onClick={() => setCartOpen(!cartOpen)}>
@@ -194,7 +192,11 @@ export default function Navbar() {
                 <div className={`${dropdownClass} w-80`}>
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium">Keranjang</h4>
-                    {cartCount > 0 && <Link to="/cart" className="text-[#3e6dc8] hover:underline text-base">Lihat semua</Link>}
+                    {cartCount > 0 && (
+                      <Link to="/cart" className="text-[#3e6dc8] hover:underline text-base">
+                        Lihat semua
+                      </Link>
+                    )}
                   </div>
                   <div className="w-full h-px bg-gray-200 my-2"></div>
                   {cartItems.length === 0 ? (
@@ -285,7 +287,6 @@ export default function Navbar() {
                       <span>Akun</span>
                       <ChevronRight size={16} className="text-gray-400" />
                     </button>
-
                     <button
                       onClick={() => navigate("/orders")}
                       className="flex justify-between items-center w-full px-4 py-2 hover:bg-gray-100 text-base"
@@ -294,10 +295,15 @@ export default function Navbar() {
                       <ChevronRight size={16} className="text-gray-400" />
                     </button>
                     <div className="border-t my-1"></div>
-                    <button onClick={() => {
-                      logout();
-                      setCartItems([]);
-                    }} className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-base text-red-600">Keluar</button>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setCartItems([]);
+                      }}
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-base text-red-600"
+                    >
+                      Keluar
+                    </button>
                   </div>
                 )}
               </div>
@@ -307,7 +313,6 @@ export default function Navbar() {
                 <LinkButton text="Daftar" to="/register" variant="primary" />
               </div>
             )}
-
           </div>
         </div>
       </div>
