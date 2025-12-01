@@ -25,3 +25,7 @@ export const updateCartItemQuantity = (id, { quantity }) =>
 
 // Hapus item dari cart
 export const removeFromCart = (id) => api.delete(`/cart/items/${id}`);
+
+// Hapus beberapa item sekaligus
+export const removeMultipleCartItems = (ids) =>
+  api.delete("/cart/multiple", { data: { cart_item_ids: ids } });

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Minus, Plus } from "lucide-react";
 import { useCart } from "../context/CartContext";
-import { getCart, removeFromCart, updateCartItemQuantity } from "../api/cart";
+import { getCart, removeFromCart, updateCartItemQuantity, removeMultipleCartItems } from "../api/cart";
 import { useAuth } from "../context/AuthContext";
 import FullscreenLoader from "../components/FullscreenLoader";
 import { createOrderFromCart } from "../api/order";
@@ -77,7 +77,7 @@ export default function Cart() {
     triggerUpdateQty(ci.id, ci.quantity);
   };
 
-  // ---------------- Remove ----------------
+  // ---------------- Remove single ----------------
   const handleRemove = async (id) => {
     setRemovingId(id);
     try {
@@ -94,14 +94,40 @@ export default function Cart() {
     }
   };
 
-  // ---------------- Checkout ----------------
-  const handleCheckout = async () => {
-    setCheckingOut(true);
+  // ---------------- Remove multiple ----------------
+  const handleRemoveSelected = async () => {
+    setRemovingId("bulk");
     try {
-      const res = await createOrderFromCart();
+      await removeMultipleCartItems(selectedItems);
+      await fetchCartData();
+      setSelectedItems([]);
+      window.dispatchEvent(new Event("cartUpdated"));
+      fetchCartCount();
+      toast.success("Semua item yang dipilih berhasil dihapus");
+    } catch {
+      toast.error("Gagal menghapus beberapa item");
+    } finally {
+      setRemovingId(null);
+    }
+  };
 
-      // Kosongkan cart & trigger update Navbar
-      setCart(null);
+  // ---------------- Checkout ----------------
+const handleCheckout = async () => {
+  if (selectedItems.length === 0) {
+    toast.error("Silakan pilih minimal satu item untuk checkout");
+    return;
+  }
+
+  setCheckingOut(true);
+    try {
+      // Misal createOrderFromCart menerima payload: { cart_item_ids: [...] }
+      const res = await createOrderFromCart({ cart_item_ids: selectedItems });
+
+      // Kosongkan cart & selection hanya untuk item yang dibeli
+      setCart((prev) => ({
+        ...prev,
+        cart_items: prev.cart_items.filter((ci) => !selectedItems.includes(ci.id)),
+      }));
       setSelectedItems([]);
       window.dispatchEvent(new Event("cartUpdated"));
       fetchCartCount();
@@ -170,22 +196,9 @@ export default function Cart() {
           {selectedItems.length > 0 && (
             <Button
               text="Hapus Semua"
-              onClick={async () => {
-                setRemovingId("bulk");
-                try {
-                  for (let id of selectedItems) await removeFromCart(id);
-                  await fetchCartData();
-                  setSelectedItems([]);
-                  window.dispatchEvent(new Event("cartUpdated"));
-                  fetchCartCount();
-                  toast.success("Semua item yang dipilih berhasil dihapus");
-                } catch {
-                  toast.error("Gagal menghapus beberapa item");
-                } finally {
-                  setRemovingId(null);
-                }
-              }}
+              onClick={handleRemoveSelected}
               variant="danger-outline"
+              loading={removingId === "bulk"}
             />
           )}
         </div>
@@ -221,7 +234,12 @@ export default function Cart() {
                         <Plus size={18} />
                       </button>
                     </div>
-                    <Button text={removingId === ci.id ? "Menghapus..." : "Hapus"} onClick={() => handleRemove(ci.id)} disabled={removingId === ci.id} variant="danger-outline" />
+                    <Button
+                      text="Hapus"
+                      onClick={() => handleRemove(ci.id)}
+                      variant="danger-outline"
+                      loading={removingId === ci.id}
+                    />
                   </div>
                 </div>
               </div>
@@ -236,7 +254,13 @@ export default function Cart() {
             <div className="flex justify-between"><span>Pajak</span><span>{formatPrice(tax)}</span></div>
             <div className="flex justify-between font-semibold text-lg"><span>Total Pesanan</span><span>{formatPrice(orderTotal)}</span></div>
 
-            <Button text={checkingOut ? "Memproses..." : "Checkout"} onClick={handleCheckout} disabled={checkingOut} variant="primary" />
+            <Button
+              text="Checkout"
+              onClick={handleCheckout}
+              variant="primary"
+              loading={checkingOut}
+              disabled={checkingOut || selectedItems.length === 0}
+            />
           </div>
         </div>
       </div>
