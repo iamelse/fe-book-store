@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(true);
 
-  // Set Authorization header
+  // ---------------- Set Axios Header ----------------
   useEffect(() => {
     if (auth.token) {
       axios.defaults.headers.common["Authorization"] = `Bearer ${auth.token}`;
@@ -30,34 +30,69 @@ export const AuthProvider = ({ children }) => {
     }
   }, [auth.token]);
 
-
-  // On app load → validate token using /me
+  // ---------------- Init → validate token ----------------
   useEffect(() => {
-    async function init() {
+    const init = async () => {
       if (!auth.token) {
         setLoading(false);
         return;
       }
-
-      const user = await getMe();
-
-      if (!user) {
+      try {
+        const user = await getMe();
+        if (!user) throw new Error("Token invalid");
+        setAuth((prev) => ({ ...prev, user }));
+      } catch {
         Cookies.remove("token");
         Cookies.remove("role");
         Cookies.remove("user");
         setAuth({ token: null, role: null, user: null });
-      } else {
-        setAuth((prev) => ({ ...prev, user }));
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
-    }
-
+    };
     init();
   }, []);
 
+  // ---------------- Auto Refresh Token ----------------
+  useEffect(() => {
+    if (!auth.token) return;
 
-  // Axios Interceptor for auto refresh token
+    const scheduleRefresh = () => {
+      try {
+        const payload = JSON.parse(atob(auth.token.split('.')[1]));
+        const exp = payload.exp * 1000;
+        const now = Date.now();
+        const timeout = exp - now - 60 * 1000; // refresh 1 menit sebelum expired
+
+        if (timeout > 0) {
+          const timer = setTimeout(async () => {
+            try {
+              const newToken = await refreshToken();
+              if (newToken) {
+                setAuth(p => ({ ...p, token: newToken }));
+                scheduleRefresh();
+              } else {
+                logout();
+              }
+            } catch {
+              logout();
+            }
+          }, timeout);
+          return () => clearTimeout(timer);
+        } else {
+          logout();
+        }
+      } catch {
+        // jika token invalid
+        logout();
+      }
+    };
+
+    const clearTimer = scheduleRefresh();
+    return clearTimer;
+  }, [auth.token]);
+
+  // ---------------- Axios Interceptor ----------------
   useEffect(() => {
     const interceptor = axios.interceptors.response.use(
       (res) => res,
@@ -67,19 +102,17 @@ export const AuthProvider = ({ children }) => {
         if (error.response?.status === 401 && !original._retry) {
           original._retry = true;
 
-          const newToken = await refreshToken();
-          if (!newToken) {
-            Cookies.remove("token");
-            Cookies.remove("role");
-            Cookies.remove("user");
-            setAuth({ token: null, role: null, user: null });
+          try {
+            const newToken = await refreshToken();
+            if (!newToken) throw new Error("Refresh gagal");
+
+            setAuth((p) => ({ ...p, token: newToken }));
+            original.headers["Authorization"] = `Bearer ${newToken}`;
+            return axios(original);
+          } catch {
+            logout();
             return Promise.reject(error);
           }
-
-          setAuth((p) => ({ ...p, token: newToken }));
-
-          original.headers["Authorization"] = `Bearer ${newToken}`;
-          return axios(original);
         }
 
         return Promise.reject(error);
@@ -89,11 +122,9 @@ export const AuthProvider = ({ children }) => {
     return () => axios.interceptors.response.eject(interceptor);
   }, []);
 
-
-  // LOGIN
+  // ---------------- LOGIN ----------------
   const login = async (email, password) => {
     const res = await loginApi(email, password);
-
     if (!res.success) throw res;
 
     Cookies.set("token", res.token, { expires: 7 });
@@ -104,14 +135,10 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
+  // ---------------- REGISTER ----------------
+  const register = async (...args) => registerApi(...args);
 
-  // REGISTER
-  const register = async (...args) => {
-    return await registerApi(...args);
-  };
-
-
-  // LOGOUT
+  // ---------------- LOGOUT ----------------
   const logout = async () => {
     await logoutApi();
     Cookies.remove("token");

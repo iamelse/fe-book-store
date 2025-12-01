@@ -13,6 +13,7 @@ import Button from "../components/Button";
 export default function Cart() {
   const { auth } = useAuth();
   const navigate = useNavigate();
+  const { fetchCartCount } = useCart();
 
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,16 +23,17 @@ export default function Cart() {
 
   const debounceTimers = useRef({});
 
+  // ---------------- Fetch cart ----------------
   useEffect(() => {
     if (!auth.token) {
       setCart(null);
       setLoading(false);
       return;
     }
-    fetchCart();
+    fetchCartData();
   }, [auth.token]);
 
-  const fetchCart = async () => {
+  const fetchCartData = async () => {
     try {
       const res = await getCart();
       setCart(res.data.data);
@@ -42,10 +44,11 @@ export default function Cart() {
     }
   };
 
+  // ---------------- Quantity ----------------
   const triggerUpdateQty = async (id, qty) => {
     try {
       await updateCartItemQuantity(id, { quantity: qty });
-      await fetchCart();
+      await fetchCartData();
       window.dispatchEvent(new Event("cartUpdated"));
       toast.success("Jumlah barang berhasil diperbarui");
     } catch {
@@ -74,12 +77,14 @@ export default function Cart() {
     triggerUpdateQty(ci.id, ci.quantity);
   };
 
+  // ---------------- Remove ----------------
   const handleRemove = async (id) => {
     setRemovingId(id);
     try {
       await removeFromCart(id);
-      await fetchCart();
+      await fetchCartData();
       window.dispatchEvent(new Event("cartUpdated"));
+      fetchCartCount();
       toast.success("Barang berhasil dihapus dari keranjang");
       setSelectedItems((prev) => prev.filter((itemId) => itemId !== id));
     } catch {
@@ -89,10 +94,18 @@ export default function Cart() {
     }
   };
 
+  // ---------------- Checkout ----------------
   const handleCheckout = async () => {
     setCheckingOut(true);
     try {
       const res = await createOrderFromCart();
+
+      // Kosongkan cart & trigger update Navbar
+      setCart(null);
+      setSelectedItems([]);
+      window.dispatchEvent(new Event("cartUpdated"));
+      fetchCartCount();
+
       toast.success("Pesanan berhasil dibuat! Mengalihkan ke pembayaran…");
       navigate(`/payment/${res.data.data.id}`);
     } catch {
@@ -102,15 +115,12 @@ export default function Cart() {
     }
   };
 
-  // Select all & per item
+  // ---------------- Selection ----------------
   const allSelected = cart?.cart_items.length > 0 && selectedItems.length === cart.cart_items.length;
 
   const toggleSelectAll = () => {
-    if (allSelected) {
-      setSelectedItems([]);
-    } else {
-      setSelectedItems(cart.cart_items.map((ci) => ci.id));
-    }
+    if (allSelected) setSelectedItems([]);
+    else setSelectedItems(cart.cart_items.map((ci) => ci.id));
   };
 
   const toggleSelectItem = (id) => {
@@ -119,6 +129,7 @@ export default function Cart() {
     );
   };
 
+  // ---------------- Render ----------------
   if (loading) return <FullscreenLoader />;
 
   if (!cart || cart.cart_items.length === 0) {
@@ -149,15 +160,10 @@ export default function Cart() {
           </p>
         </div>
 
-        {/* Card Select All */}
+        {/* Select All */}
         <div className="flex items-center justify-between border border-gray-200 rounded-xl bg-white p-4 mb-6">
           <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              onChange={toggleSelectAll}
-              className="w-4 h-4"
-            />
+            <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="w-4 h-4" />
             <label className="text-base text-gray-700 font-medium">Pilih semua barang</label>
           </div>
 
@@ -165,16 +171,14 @@ export default function Cart() {
             <Button
               text="Hapus Semua"
               onClick={async () => {
-                const removingIds = [...selectedItems];
-                setRemovingId("bulk"); // Optional, jika mau pakai loading
+                setRemovingId("bulk");
                 try {
-                  for (let id of removingIds) {
-                    await removeFromCart(id);
-                  }
-                  toast.success("Semua item yang dipilih berhasil dihapus");
-                  await fetchCart();
+                  for (let id of selectedItems) await removeFromCart(id);
+                  await fetchCartData();
                   setSelectedItems([]);
                   window.dispatchEvent(new Event("cartUpdated"));
+                  fetchCartCount();
+                  toast.success("Semua item yang dipilih berhasil dihapus");
                 } catch {
                   toast.error("Gagal menghapus beberapa item");
                 } finally {
@@ -186,111 +190,53 @@ export default function Cart() {
           )}
         </div>
 
-        {/* Grid 2 kolom */}
+        {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-          {/* KIRI: daftar barang */}
+          {/* LEFT: cart items */}
           <div className="md:col-span-2 space-y-4">
             {cart.cart_items.map((ci) => (
               <div key={ci.id} className="flex flex-col md:flex-row items-center gap-4 border border-gray-200 rounded-xl bg-white p-4">
-                {/* Checkbox per item */}
-                <input
-                  type="checkbox"
-                  checked={selectedItems.includes(ci.id)}
-                  onChange={() => toggleSelectItem(ci.id)}
-                  className="w-4 h-4"
-                />
-
-                {/* Gambar */}
+                <input type="checkbox" checked={selectedItems.includes(ci.id)} onChange={() => toggleSelectItem(ci.id)} className="w-4 h-4" />
                 <div className="w-24 aspect-[1/1.4] overflow-hidden rounded">
-                  <img
-                    src="https://picsum.photos/80/112"
-                    alt={ci.item.title}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src="https://picsum.photos/80/112" alt={ci.item.title} className="w-full h-full object-cover" />
                 </div>
-
-                {/* Konten utama */}
                 <div className="flex-1">
                   <p className="font-medium text-xl line-clamp-2 text-gray-800">{ci.item.title}</p>
-                  <span
-                    className={`inline-block px-2 py-1 rounded-sm mt-2 text-xs font-semibold ${
-                      ci.item.stock > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                    }`}
-                  >
+                  <span className={`inline-block px-2 py-1 rounded-sm mt-2 text-xs font-semibold ${
+                    ci.item.stock > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                  }`}>
                     {ci.item.stock > 0 ? `Tersedia • ${ci.item.stock} barang` : "Stok habis"}
                   </span>
                   <p className="mt-2 text-lg font-medium text-gray-800">{formatPrice(ci.item.price)}</p>
                 </div>
 
-                {/* Quantity & Hapus sejajar */}
                 <div className="flex flex-col items-center gap-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-4 mt-4">
-                      <div className="qty-input-wrapper flex items-center border border-gray-300 rounded-lg overflow-hidden">
-                        <button
-                          disabled={ci.quantity <= 1}
-                          onClick={() => onChangeQuantity(ci, ci.quantity - 1)}
-                          className="px-1.5 py-3 disabled:opacity-40 hover:bg-gray-100"
-                        >
-                          <Minus size={18} />
-                        </button>
-                        <input
-                          type="number"
-                          min="1"
-                          max={ci.item.stock}
-                          value={ci.quantity}
-                          onChange={(e) => onChangeQuantity(ci, e.target.value)}
-                          onBlur={() => onBlurQuantity(ci)}
-                          className="w-12 text-center font-medium text-gray-700 focus:outline-none"
-                        />
-                        <button
-                          disabled={ci.quantity >= ci.item.stock}
-                          onClick={() => onChangeQuantity(ci, ci.quantity + 1)}
-                          className="px-1.5 py-3 disabled:opacity-40 hover:bg-gray-100"
-                        >
-                          <Plus size={18} />
-                        </button>
-                      </div>
-
-                      <Button
-                        text={removingId === ci.id ? "Menghapus..." : "Hapus"}
-                        onClick={() => handleRemove(ci.id)}
-                        disabled={removingId === ci.id}
-                        variant="danger-outline"
-                      />
+                  <div className="flex items-center gap-3 mt-4">
+                    <div className="qty-input-wrapper flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                      <button disabled={ci.quantity <= 1} onClick={() => onChangeQuantity(ci, ci.quantity - 1)} className="px-1.5 py-3 disabled:opacity-40 hover:bg-gray-100">
+                        <Minus size={18} />
+                      </button>
+                      <input type="number" min="1" max={ci.item.stock} value={ci.quantity} onChange={(e) => onChangeQuantity(ci, e.target.value)} onBlur={() => onBlurQuantity(ci)} className="w-12 text-center font-medium text-gray-700 focus:outline-none" />
+                      <button disabled={ci.quantity >= ci.item.stock} onClick={() => onChangeQuantity(ci, ci.quantity + 1)} className="px-1.5 py-3 disabled:opacity-40 hover:bg-gray-100">
+                        <Plus size={18} />
+                      </button>
                     </div>
+                    <Button text={removingId === ci.id ? "Menghapus..." : "Hapus"} onClick={() => handleRemove(ci.id)} disabled={removingId === ci.id} variant="danger-outline" />
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* KANAN: ringkasan */}
+          {/* RIGHT: summary */}
           <div className="border border-gray-200 rounded-xl bg-white p-4 flex flex-col gap-4">
             <h2 className="text-xl font-semibold mb-2 text-gray-800">Ringkasan Pesanan</h2>
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span>{formatPrice(totalPrice)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Ongkos Kirim</span>
-              <span>{formatPrice(shipping)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Pajak</span>
-              <span>{formatPrice(tax)}</span>
-            </div>
-            <div className="flex justify-between font-semibold text-lg">
-              <span>Total Pesanan</span>
-              <span>{formatPrice(orderTotal)}</span>
-            </div>
+            <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(totalPrice)}</span></div>
+            <div className="flex justify-between"><span>Ongkos Kirim</span><span>{formatPrice(shipping)}</span></div>
+            <div className="flex justify-between"><span>Pajak</span><span>{formatPrice(tax)}</span></div>
+            <div className="flex justify-between font-semibold text-lg"><span>Total Pesanan</span><span>{formatPrice(orderTotal)}</span></div>
 
-            <Button
-              text={checkingOut ? "Memproses..." : "Checkout"}
-              onClick={handleCheckout}
-              disabled={checkingOut}
-              variant="primary"
-            />
+            <Button text={checkingOut ? "Memproses..." : "Checkout"} onClick={handleCheckout} disabled={checkingOut} variant="primary" />
           </div>
         </div>
       </div>

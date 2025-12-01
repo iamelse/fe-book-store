@@ -43,7 +43,6 @@ export default function Navbar() {
 
   const notifications = []; // placeholder
 
-  // ---------------- Dropdown Styling ----------------
   const dropdownClass = "absolute right-0 top-8 bg-white shadow-lg border border-gray-200 rounded-md p-3 z-50 transition-all duration-200 origin-top";
 
   // ---------------- Fetch Categories ----------------
@@ -76,15 +75,13 @@ export default function Navbar() {
 
   useEffect(() => {
     loadCart();
-
     const handleCartUpdate = () => {
       fetchCartCount();
       loadCart();
     };
-
     window.addEventListener("cartUpdated", handleCartUpdate);
     return () => window.removeEventListener("cartUpdated", handleCartUpdate);
-  }, []);
+  }, [auth.token]);
 
   // ---------------- Close Dropdowns on Outside Click ----------------
   useEffect(() => {
@@ -112,6 +109,13 @@ export default function Navbar() {
     navigate(`/items?search=${encodeURIComponent(searchTerm.trim())}`);
   };
 
+  // ---------------- Auto-logout handling ----------------
+  useEffect(() => {
+    if (!auth.token) {
+      setCartItems([]); // bersihin cart otomatis saat logout
+    }
+  }, [auth.token]);
+
   return (
     <nav className="border-b border-gray-300 bg-white">
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between py-4">
@@ -131,7 +135,6 @@ export default function Navbar() {
 
         {/* Desktop Navigation */}
         <div className="hidden sm:flex items-center w-full justify-between gap-6">
-          {/* LEFT SIDE */}
           <div className="flex items-center gap-4 flex-1 mx-6">
             {/* Category Dropdown */}
             <div className="relative" ref={categoryRef}>
@@ -166,7 +169,7 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Search Bar (Full Width) */}
+            {/* Search Bar */}
             <div className="flex-1">
               <Input
                 placeholder="Keyword dari author, title, atau description..."
@@ -252,7 +255,6 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Divider */}
             <div className="h-7 w-px bg-gray-300 mx-3"></div>
 
             {/* User Avatar Dropdown */}
@@ -304,9 +306,7 @@ export default function Navbar() {
                       onClick={() => {
                         logout();
                         setCartItems([]);
-                        toast.success("Berhasil logout!", {
-                          duration: 3500,
-                        });
+                        toast.success("Berhasil logout!", { duration: 3500 });
                       }}
                       className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-base text-red-600"
                     >
