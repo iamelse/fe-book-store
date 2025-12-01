@@ -252,6 +252,10 @@ const handleCheckout = async () => {
             <div className="flex justify-between"><span>Subtotal</span><span>{formatPrice(totalPrice)}</span></div>
             <div className="flex justify-between"><span>Ongkos Kirim</span><span>{formatPrice(shipping)}</span></div>
             <div className="flex justify-between"><span>Pajak</span><span>{formatPrice(tax)}</span></div>
+            
+            {/* Divider sebelum total */}
+            <div className="border-t border-gray-300 my-2" />
+
             <div className="flex justify-between font-semibold text-lg"><span>Total Pesanan</span><span>{formatPrice(orderTotal)}</span></div>
 
             <Button
