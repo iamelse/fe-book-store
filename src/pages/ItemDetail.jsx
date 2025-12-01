@@ -10,6 +10,8 @@ import { Star, Minus, Plus } from "lucide-react";
 import Cookies from "js-cookie";
 import axios from "axios";
 import Button from "../components/Button";
+import { toast } from "react-hot-toast";
+
 
 const BASE_URL = "http://127.0.0.1:8000/api/v1";
 
@@ -80,10 +82,16 @@ export default function ItemDetail() {
     setAdding(true);
     try {
       await addToCart({ item_id: item.id, quantity });
-      setMessage(`${quantity} buku "${item.title}" berhasil ditambahkan ke keranjang!`);
       window.dispatchEvent(new Event("cartUpdated"));
+      toast.success(`${quantity} buku "${item.title}" berhasil ditambahkan ke keranjang!`, {
+        position: "bottom-right",
+        duration: 3500,
+      });
     } catch (err) {
-      setMessage(err.response?.data?.message || "Gagal menambahkan ke keranjang");
+      toast.error(err.response?.data?.message || "Gagal menambahkan ke keranjang", {
+        position: "bottom-right",
+        duration: 3500,
+      });
     } finally {
       setAdding(false);
     }

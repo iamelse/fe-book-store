@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(true);
 
-  // Pasang / hapus Authorization header axios
+  // Set Authorization header
   useEffect(() => {
     if (auth.token) {
       axios.defaults.headers.common["Authorization"] = `Bearer ${auth.token}`;
@@ -30,59 +30,56 @@ export const AuthProvider = ({ children }) => {
     }
   }, [auth.token]);
 
-  // Init: cek /me jika ada token di cookies
+
+  // On app load → validate token using /me
   useEffect(() => {
-    async function initAuth() {
+    async function init() {
       if (!auth.token) {
         setLoading(false);
         return;
       }
 
-      try {
-        const user = await getMe();
-        setAuth((prev) => ({ ...prev, user }));
-      } catch (err) {
-        // token invalid → logout paksa
+      const user = await getMe();
+
+      if (!user) {
         Cookies.remove("token");
         Cookies.remove("role");
         Cookies.remove("user");
         setAuth({ token: null, role: null, user: null });
+      } else {
+        setAuth((prev) => ({ ...prev, user }));
       }
 
       setLoading(false);
     }
 
-    initAuth();
+    init();
   }, []);
 
-  // Interceptor axios untuk refresh token otomatis
+
+  // Axios Interceptor for auto refresh token
   useEffect(() => {
     const interceptor = axios.interceptors.response.use(
       (res) => res,
       async (error) => {
-        const originalRequest = error.config;
+        const original = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
+        if (error.response?.status === 401 && !original._retry) {
+          original._retry = true;
 
-          try {
-            const newToken = await refreshToken();
-            if (!newToken) throw new Error("Refresh failed");
-
-            Cookies.set("token", newToken, { expires: 7 });
-            setAuth((prev) => ({ ...prev, token: newToken }));
-
-            axios.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
-            originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
-
-            return axios(originalRequest);
-
-          } catch (err) {
+          const newToken = await refreshToken();
+          if (!newToken) {
             Cookies.remove("token");
             Cookies.remove("role");
             Cookies.remove("user");
             setAuth({ token: null, role: null, user: null });
+            return Promise.reject(error);
           }
+
+          setAuth((p) => ({ ...p, token: newToken }));
+
+          original.headers["Authorization"] = `Bearer ${newToken}`;
+          return axios(original);
         }
 
         return Promise.reject(error);
@@ -92,65 +89,39 @@ export const AuthProvider = ({ children }) => {
     return () => axios.interceptors.response.eject(interceptor);
   }, []);
 
+
   // LOGIN
   const login = async (email, password) => {
-    try {
-      const data = await loginApi(email, password);
+    const res = await loginApi(email, password);
 
-      Cookies.set("token", data.token, { expires: 7 });
-      Cookies.set("role", data.role, { expires: 7 });
-      Cookies.set("user", JSON.stringify(data.user), { expires: 7 });
+    if (!res.success) throw res;
 
-      setAuth(data);
-      axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
+    Cookies.set("token", res.token, { expires: 7 });
+    Cookies.set("role", res.role, { expires: 7 });
+    Cookies.set("user", JSON.stringify(res.user), { expires: 7 });
 
-      return data;
-    } catch (err) {
-      console.error("Login failed", err);
-      throw err;
-    }
+    setAuth(res);
+    return res;
   };
+
 
   // REGISTER
-  const register = async (name, email, password, password_confirmation) => {
-    try {
-      return await registerApi(name, email, password, password_confirmation);
-    } catch (err) {
-      console.error("Register failed", err);
-      throw err;
-    }
+  const register = async (...args) => {
+    return await registerApi(...args);
   };
+
 
   // LOGOUT
   const logout = async () => {
-    try {
-      await logoutApi();
-    } catch (err) {
-      console.error("Logout API failed", err);
-    }
-
+    await logoutApi();
     Cookies.remove("token");
     Cookies.remove("role");
     Cookies.remove("user");
     setAuth({ token: null, role: null, user: null });
   };
 
-  // Manual refresh token (opsional)
-  const refresh = async () => {
-    try {
-      const token = await refreshToken();
-      if (token) {
-        Cookies.set("token", token);
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        setAuth((prev) => ({ ...prev, token }));
-      }
-    } catch (err) {
-      console.error("Manual refresh failed", err);
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ auth, login, logout, register, refresh, loading }}>
+    <AuthContext.Provider value={{ auth, login, logout, register, loading }}>
       {children}
     </AuthContext.Provider>
   );

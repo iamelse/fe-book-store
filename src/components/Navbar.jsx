@@ -11,6 +11,8 @@ import { Menu, Search, ShoppingCart, Bell, ChevronDown, ChevronRight } from "luc
 import LinkButton from "./ButtonLink";
 import Input from "./Input";
 
+import toast from "react-hot-toast";
+
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -299,6 +301,9 @@ export default function Navbar() {
                       onClick={() => {
                         logout();
                         setCartItems([]);
+                        toast.success("Berhasil logout!", {
+                          duration: 3500,
+                        });
                       }}
                       className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-base text-red-600"
                     >
