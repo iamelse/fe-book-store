@@ -16,6 +16,7 @@ export default function Button({
   const variants = {
     primary: "bg-[#3e6dc8] hover:bg-[#345ab0] text-white",
     secondary: "border border-[#3e6dc8] text-[#3e6dc8] hover:bg-[#e0e7ff]",
+    "danger-outline": "border border-red-500 text-red-500 hover:bg-red-50",
   };
 
   const combinedClasses = `

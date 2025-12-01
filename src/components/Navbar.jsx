@@ -12,6 +12,7 @@ import LinkButton from "./ButtonLink";
 import Input from "./Input";
 
 import toast from "react-hot-toast";
+import { formatPrice } from "../utils/format";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -212,9 +213,11 @@ export default function Navbar() {
                             alt={cartItem.item.title}
                             className="w-12 h-12 rounded-md object-cover border"
                           />
-                          <div className="flex flex-col">
-                            <span className="text-base font-medium">{cartItem.item.title}</span>
-                            <span className="text-base text-gray-600">Rp {cartItem.item.price.toLocaleString("id-ID")}</span>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-base font-semibold line-clamp-1">{cartItem.item.title}</span>
+                            <span className="text-sm text-gray-500">
+                              {formatPrice(cartItem.item.price)} x {cartItem.quantity}
+                            </span>
                           </div>
                         </div>
                       ))}
