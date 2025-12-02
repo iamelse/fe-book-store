@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import FullscreenLoader from "./components/FullscreenLoader";
 import MainLayout from "./layouts/MainLayout";
 import AuthLayout from "./layouts/AuthLayout";
+import Profile from "./pages/Profile";
 
 export default function AppRoutes() {
   const { auth, loading } = useAuth();
@@ -85,6 +86,14 @@ export default function AppRoutes() {
         element={
           <MainLayout>
             {auth.token ? <Orders /> : <Navigate to="/login" replace />}
+          </MainLayout>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <MainLayout>
+            {auth.token ? <Profile /> : <Navigate to="/login" replace />}
           </MainLayout>
         }
       />
