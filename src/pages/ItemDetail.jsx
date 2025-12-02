@@ -146,7 +146,7 @@ export default function ItemDetail() {
   const rating = item.rating ?? 4.5;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <section className="max-w-7xl mx-auto px-6 py-12 md:py-16 flex flex-col md:flex-row gap-10">
         <div className="md:w-1/2 flex flex-col items-center">
           <div className="w-full aspect-square rounded-lg overflow-hidden mb-4">
